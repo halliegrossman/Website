@@ -1,0 +1,2 @@
+"0","#mean age for dead = 65.125"
+"0","rando %>% filter(outcome==""Died"") %>% summarise(mean(age))"

@@ -1,0 +1,528 @@
+---
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "Hallie Grossman"
+date: '05/01/2020'
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+---
+
+
+
+<p>INTRODUCTION-</p>
+<pre class="r"><code>ICU&lt;-read.csv(&quot;https://vincentarelbundock.github.io/Rdatasets/csv/Stat2Data/ICU.csv&quot;) %&gt;% select(-c(1))
+ICU&lt;-ICU %&gt;% mutate(Gender=ifelse(Sex==1,&quot;Female&quot;,&quot;Male&quot;)) %&gt;% mutate(Outcome=ifelse(Survive==1,&quot;Survived&quot;,&quot;Died&quot;)) %&gt;% mutate(Admission=ifelse(Emergency==1,&quot;Emergency&quot;,&quot;Elective&quot;)) %&gt;% mutate(Infected=ifelse(Infection==1,&quot;Yes&quot;,&quot;No&quot;)) %&gt;% mutate(AgeGroup=case_when(Age&lt;=49 ~&quot;Young&quot;, Age&lt;=69~&quot;Middle&quot;, Age&gt;=70~&quot;Older&quot;))</code></pre>
+<p>I have chosen a dataset containing various details about patients in the ICU (Intensive Care Unit). The dataset contains information on 200 different patients (200 observations), and the original dataset contained the following variables: “ID” (patient ID code), “Survive” (where 1=patient survived to discharge and 0=patient died), “Age”&quot; (in years), “AgeGroup” (where 1= young (under 50), 2= middle (50-69), 3 = old (70+)), “Sex” (where 1=female and 0=male), “Infection” (where 1=infection suspected and 0=no infection), “SysBP” (Systolic blood pressure measuerd in mmHg), “Pulse” (heart rate measured in beats per minute), and “Emergency” (where 1=emergency admission and 0=elective admission). However, I do manipulate some of these variales throughout the project which you will see (for example, change some binary variables to categorical). In addition, I removed the “ID” variable from the original dataset, as it was not useful nor of interest to me.</p>
+<ol style="list-style-type: decimal">
+<li>MANOVA</li>
+</ol>
+<pre class="r"><code>#install.packages(&quot;car&quot;)
+library(car)
+library(mvtnorm); library(ggExtra)
+#density plot
+ggplot(ICU, aes(x = SysBP, y = Pulse)) +
+  geom_point(alpha = .5) + geom_density_2d() + coord_fixed() + facet_wrap(~Infected)</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-2-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#install.packages(&quot;heplots&quot;)
+library(heplots)
+ICU1&lt;-data.frame(ICU)
+ICU1$SysBP&lt;- as.numeric(ICU1$SysBP)
+ICU1$Pulse&lt;- as.numeric(ICU1$Pulse)
+ICU1$Infection &lt;- as.logical(ICU1$Infection)
+ICU1$Emergency &lt;- as.logical(ICU1$Emergency)
+boxM(cbind(SysBP,Pulse)~Infection, data=ICU1)</code></pre>
+<pre><code>## 
+##  Box&#39;s M-test for Homogeneity of Covariance Matrices
+## 
+## data:  Y
+## Chi-Sq (approx.) = 1.2666, df = 3, p-value = 0.7371</code></pre>
+<pre class="r"><code>#MANOVA
+man1&lt;-manova(cbind(SysBP,Pulse)~Infected, data=ICU)
+summary(man1)</code></pre>
+<pre><code>## Df Pillai approx F num Df den Df Pr(&gt;F)
+## Infected 1 0.14107 16.177 2 197 3.125e-07 ***
+## Residuals 198
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>#UNIVARIATE ANOVAS
+summary.aov(man1)</code></pre>
+<pre><code>## Response SysBP :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## Infected 1 11286 11286.0 10.911 0.001134 **
+## Residuals 198 204796 1034.3
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response Pulse :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## Infected 1 13811 13811.4 21.128 7.645e-06 ***
+## Residuals 198 129434 653.7
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>#posthoc tests
+ICU %&gt;% group_by(Infected) %&gt;% summarise(mean(SysBP), mean(Pulse))</code></pre>
+<pre><code>## # A tibble: 2 x 3
+##   Infected `mean(SysBP)` `mean(Pulse)`
+##   &lt;chr&gt;            &lt;dbl&gt;         &lt;dbl&gt;
+## 1 No                139.          91.9
+## 2 Yes               123.         109.</code></pre>
+<pre class="r"><code>pairwise.t.test(ICU$SysBP,ICU$Infected, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  ICU$SysBP and ICU$Infected 
+## 
+##     No    
+## Yes 0.0011
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(ICU$Pulse,ICU$Infected, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  ICU$Pulse and ICU$Infected 
+## 
+##     No     
+## Yes 7.6e-06
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>#the probability of at least one type I error = 0.2262191
+1-.05 #= 0.95</code></pre>
+<pre><code>## [1] 0.95</code></pre>
+<pre class="r"><code>1-((0.95)^5)</code></pre>
+<pre><code>## [1] 0.2262191</code></pre>
+<pre class="r"><code>1-0.7737809</code></pre>
+<pre><code>## [1] 0.2262191</code></pre>
+<pre class="r"><code>#adjusted alpha = 0.01
+.05/5</code></pre>
+<pre><code>## [1] 0.01</code></pre>
+<p>I performed a MANOVA to test whether two of my numeric variables (systolic blood pressure and pulse) differed by levels of one of my categorical variables (patients with suspected infections and patients with no infection). My hypotheses are shown below, followed by my results.</p>
+<p>Ho: For each response variable (BP and Pulse), the means of the groups are equal
+Ha: For at least 1 response variable (either BP or Pulse), at least 1 group mean (either infected or non-infected) differs.</p>
+<p>Significant differences among the means of at least one of the response variables (BP, Pulse, or both) were found between the two groups (infected and non-infected); Pillai trace = 0.14107, psuedo F (2,197) = 16.177, p = 3.125e-07 so p&lt;0.0001. Univariate ANOVAs for each dependent variable (both BP and Pulse) were conducted as follow-up tests to the MANOVA. The univariate ANOVAs for both BP and Pulse were also significant, F(3,22) = 26.669 &amp; p&lt;.0001, F(3,22) = 89.883 &amp; p&lt;.0001, F(3,22) = 49.12 &amp; p&lt;.0001, F(3,22) = 29.157 &amp; p&lt;.0001, F(3,22) = 9.5026 &amp; p&lt;.0001, respectively. Post hoc analysis was performed conducting pairwise comparisons to determine which groups differed in BP and Pulse. In order to do so, I performed a post-hoc test for both ANOVAS (2), meaning I performed 2 t-tests. Since I did 1 MANOVA, 2 ANOVAS, and 2 t-tests, I should use alpha = .05/5 = 0.01. With this boneferri corrected significance level, both BP (p=0.0011) and Pulse (p=7.6e-06) were still found to be significant (p&lt;0.01 for both).
+The assumptions I tested were multivariate normality and homogeneity of (co)variances, and both were met. I concluded multivariate normality was met because both of my dependent variables (BP and Pulse) had at least 25 observations. In addition, the bivariate densities for each group (infected and non-infected) looked pretty normal according to my plot. I concluded homogeneity of (co)variances was met because I performed a Box’s M-test and found the p value to 0.7371 (p&gt;0.05). Moreover, I should reject the null hypothesis because both of my response variables differed across the 2 groups.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>RANDOMIZATION TEST</li>
+</ol>
+<pre class="r"><code>survived_data &lt;- subset(ICU, Outcome==&quot;Survived&quot;)
+died_data &lt;- subset(ICU, Outcome==&quot;Died&quot;)
+survived_age &lt;- survived_data$Age
+died_age &lt;- died_data$Age
+outcome_data &lt;- ICU$Outcome
+age_data &lt;- ICU$Age
+t.test(survived_age,died_age)</code></pre>
+<pre><code>##
+## Welch Two Sample t-test
+##
+## data: survived_age and died_age
+## t = -3.068, df = 71.401, p-value = 0.003044
+## alternative hypothesis: true difference in means is not
+equal to 0
+## 95 percent confidence interval:
+## -15.6324 -3.3176
+## sample estimates:
+## mean of x mean of y
+## 55.650 65.125</code></pre>
+<pre class="r"><code>#rando data
+rando&lt;-data.frame(age=c(age_data),outcome=c(outcome_data))
+#mean age for survived = 55.65
+rando %&gt;% filter(outcome==&quot;Survived&quot;) %&gt;% summarise(mean(age))</code></pre>
+<pre><code>##   mean(age)
+## 1     55.65</code></pre>
+<pre class="r"><code>#mean age for dead = 65.125
+rando %&gt;% filter(outcome==&quot;Died&quot;) %&gt;% summarise(mean(age))</code></pre>
+<pre><code>##   mean(age)
+## 1    65.125</code></pre>
+<pre class="r"><code>#mean age dif
+mean_age_dif &lt;- 65.125 - 55.65
+set.seed(348)
+rand_dist&lt;-vector()
+for(i in 1:5000){
+new&lt;-data.frame(age=sample(ICU$Age),outcome=ICU$Outcome)
+rand_dist[i]&lt;-mean(new[new$outcome==&quot;Died&quot;,]$age)-
+              mean(new[new$outcome==&quot;Survived&quot;,]$age)}
+#two tailed p value = 0.0062
+mean(rand_dist&gt;9.475 | rand_dist&lt; -9.475)</code></pre>
+<pre><code>## [1] 0.0062</code></pre>
+<pre class="r"><code>{hist(rand_dist,main=&quot;&quot;,ylab=&quot;&quot;); abline(v = c(9.475,-9.475),col=&quot;red&quot;)}</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-3-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#indep t test for comparison = 0.003044
+t.test(data=rando,age~outcome)</code></pre>
+<pre><code>##
+## Welch Two Sample t-test
+##
+## data: age by outcome
+## t = 3.068, df = 71.401, p-value = 0.003044
+## alternative hypothesis: true difference in means is not
+equal to 0
+## 95 percent confidence interval:
+## 3.3176 15.6324
+## sample estimates:
+## mean in group Died mean in group Survived
+## 65.125 55.650</code></pre>
+<p>I conducted a randomization test to see whether there was a difference in average age (in years) between patients who died (n=40) and patients who survived (n=160) in the ICU. My null and alternative hypotheses are shown below.</p>
+<p>Ho : average age is the same for patients in the ICU who died vs. patients who survived
+Ha : average age is different for patients in the ICU who died vs. patients who survived</p>
+<p>First, I found the mean age for patients who died to be 65.125 years and the mean age for those who survived 55.65 years. Moreover, the mean differences value is 9.475 (65.125 - 55.65 = 9.475). I then performed a permutation test to find the proportion of my mean differences (simulated under the null hypothesis) that are more extreme than the actual value of +/- 9.475. I computed the two-tailed p-value to be 0.0062, which corresponds to the probability of observing a mean difference as extreme as the one I observed in my original data under this “randomized distribution.” My p-value from the permutation test (p=0.0062) and the independent-samples t-test (p=0.003044) both indicate that I should reject the null hypothesis (p&lt;0.05 for both). In conclusion, I should accept the null hypothesis stating that the true difference in mean ages is not equal to zero, so those who died and those who survived are not the same ages (on average).</p>
+<ol start="3" style="list-style-type: decimal">
+<li>LINEAR REGRESSION</li>
+</ol>
+<pre class="r"><code>#dataset
+ICU3&lt;-ICU
+#mean center numeric predictor variable (pulse)
+ICU3$Pulse_c&lt;-ICU3$Pulse-mean(ICU3$Pulse,na.rm = T)
+ICU3$AgeGroup&lt;-as.factor(ICU3$AgeGroup)
+#model - relevel older age as reference group
+ICU3$AgeGroup&lt;-relevel(ICU3$AgeGroup,ref=&quot;Older&quot;)
+fit3&lt;-lm(SysBP ~ AgeGroup + Pulse_c + AgeGroup:Pulse_c, data= ICU3)
+summary(fit3)</code></pre>
+<pre><code>##
+## Call:
+## lm(formula = SysBP ~ AgeGroup + Pulse_c +
+AgeGroup:Pulse_c, data = ICU3)
+##
+## Residuals:
+## Min 1Q Median 3Q Max
+## -95.789 -20.013 0.639 17.967 126.238
+##
+## Coefficients:
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 133.7274 4.1320 32.364 &lt;2e-16 ***
+## AgeGroupMiddle -0.7478 5.5918 -0.134 0.8938
+## AgeGroupYoung -3.8930 5.9687 -0.652 0.5150
+## Pulse_c -0.2358 0.1367 -1.725 0.0862 .
+## AgeGroupMiddle:Pulse_c 0.3279 0.2084 1.574 0.1172
+## AgeGroupYoung:Pulse_c 0.2242 0.2137 1.049 0.2953
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Residual standard error: 33.05 on 194 degrees of freedom
+## Multiple R-squared: 0.01915, Adjusted R-squared:
+-0.00613
+## F-statistic: 0.7575 on 5 and 194 DF, p-value: 0.5815</code></pre>
+<pre class="r"><code>#regression plot
+qplot(x = Pulse_c, y = SysBP, color = AgeGroup, data = ICU3) +
+  stat_smooth(method = &quot;lm&quot;, se = FALSE, fullrange = TRUE)</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-4-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#ASSUMPTIONS
+#linearity
+resids&lt;-fit3$residuals
+fitvals&lt;-fit3$fitted.values
+ggplot()+geom_point(aes(fitvals,resids))+geom_hline(yintercept=0, color=&#39;red&#39;)</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-4-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#normality - #Ho: pop is normally distributed 
+shapiro.test(resids)</code></pre>
+<pre><code>## 
+##  Shapiro-Wilk normality test
+## 
+## data:  resids
+## W = 0.98742, p-value = 0.07375</code></pre>
+<pre class="r"><code>#HOMOSKEDACITY #HO: homoskedastic 
+library(sandwich); library(lmtest)
+bptest(fit3)</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  fit3
+## BP = 12.273, df = 5, p-value = 0.03123</code></pre>
+<pre class="r"><code>#regression with robust standard errors - corrected SE
+coeftest(fit3, vcov = vcovHC(fit3))</code></pre>
+<pre><code>##
+## t test of coefficients:
+##
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 133.72741 4.15111 32.2148 &lt; 2e-16 ***
+## AgeGroupMiddle -0.74782 6.21275 -0.1204 0.90432
+## AgeGroupYoung -3.89296 5.14110 -0.7572 0.44983
+## Pulse_c -0.23576 0.13917 -1.6940 0.09188 .
+## AgeGroupMiddle:Pulse_c 0.32788 0.28719 1.1417 0.25498
+## AgeGroupYoung:Pulse_c 0.22423 0.18912 1.1857 0.23721
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary(fit3)$r.sq</code></pre>
+<pre><code>## [1] 0.01915006</code></pre>
+<pre class="r"><code>BP&lt;-ICU3$SysBP
+(sum((BP-mean(BP))^2)-sum(fit3$residuals^2))/sum((BP-mean(BP))^2)</code></pre>
+<pre><code>## [1] 0.01915006</code></pre>
+<pre class="r"><code>sum((fitvals-mean(BP))^2)/sum((BP-mean(BP))^2)</code></pre>
+<pre><code>## [1] 0.01915006</code></pre>
+<p>I created a linear regression model to predict systolic blood pressure from age group, pulse (centered), and the interaction between age group and pulse rate. I made the older age group my reference model and obtained the following results…</p>
+<p>Coefficient interpretation:
+My model estimated the younger age group to have a coefficient of -3.8930, indicating that for patients with average pulse rates (controlling for pulse), younger patients are predicted to have a blood pressure that is 3.89296 lower than that of older aged patients, on average.
+It predicted a coefficient of -0.7478 for the middle age group, indicating that for patients with average pulse rates (controlling for pulse), middle aged patients are predicted to have a blood pressure that is 0.7478 lower than that of older aged patients, on average.
+It also predicted that for every 1 unit increase in pulse rate (bpm) among older patients, blood pressure goes down 0.2358 mmHg, on average.
+In terms of interaction, my model predicted a coefficient of 0.2953 for the “AgeGroupYoung:Pulse_c” interaction, meaning the slope for Pulse on SysBP is 0.2953 greater for young patients comapared to older patients. Lastly, my model predicted a coefficient of 0.1172 for the “AgeGroupMiddle:Pulse_c” interaction, meaning the slope for Pulse on SysBP is 0.3279 greater for middle aged patients comapared to older patients.</p>
+<p>Assumption check:
+Based on my plot showing residuals vs fitted values, I could confirm that the linearity assumption was met.
+To assess normality, I performed a Shapiro-Wilk test which gave me an insignificant p-value of 0.07375. The null hypothesis for this test claims that the population is normally distributed, and since p &gt; 0.05 we would fail to reject the null. Moreover, we can assume normality.
+Based on the plot showing my residuals against my fitted values, I did not anticipate my data would meet the homoskedastic assumption. However, I performed a Breusch–Pagan test to make sure, and it confirmed that my data is heteroskedastic instead. It gave me a significant p-value (0.03123 &lt; 0.05), so I rejected the null hypothesis, therefore concluding that homoskedacity is not met.</p>
+<p>I then recomputed my regression with robust standard errors, and reanalyzed the significance of my coefficients. However, both models (the original and after recalculating with robust SEs) showed that none of them were significant. In both cases, all p values were greater than 0.05. There were minimal differences in terms of differences in the individual values (p-values, SEs, coefficients) as well.</p>
+<p>To determine the proportion of the variation in the outcome that my model explains, I computed the R^2 value and found it to be 0.01915006. In other words, 0.01915006 of the variation in SysBP can be explained by my overall model (all predictors at once). The adjusted R squared value was also very close to zero (-0.00613).</p>
+<ol start="4" style="list-style-type: decimal">
+<li>BOOTSTRAPPED STANDARD ERRORS</li>
+</ol>
+<pre class="r"><code>#bootstrap SEs 
+#rows with replacement
+boot_dat&lt;- sample_frac(ICU3, replace=T)
+samp_distn&lt;-replicate(5000, {
+boot_dat &lt;- sample_frac(ICU3, replace=T) #bootstrap your data 
+fit4&lt;-lm(SysBP ~ AgeGroup + Pulse_c + AgeGroup:Pulse_c, data= boot_dat)
+coef(fit4) #save coefs
+ })
+samp_distn %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
+<pre><code>## (Intercept) AgeGroupMiddle AgeGroupYoung Pulse_c
+AgeGroupMiddle:Pulse_c AgeGroupYoung:Pulse_c
+## 1 4.068781 6.021673 5.012224 0.1317326 0.2723387
+0.180985</code></pre>
+<pre class="r"><code>#resids with replacement
+fit4&lt;-lm(SysBP ~ AgeGroup + Pulse_c + AgeGroup:Pulse_c, data= ICU3)#fit model
+resids&lt;-fit4$residuals  #save residuals
+fitted&lt;-fit4$fitted.values #save yhats
+resid_resamp&lt;-replicate(5000,{
+    new_resids&lt;-sample(resids,replace=TRUE) #resample resids w/ replacement
+    ICU3$new_y&lt;-fitted+new_resids #add new resids to yhats to get new &quot;data&quot;
+    fit4&lt;-lm(new_y ~ AgeGroup + Pulse_c + AgeGroup:Pulse_c, data= ICU3) #refit model
+    coef(fit4) #save coefficient estimates (b0, b1, etc)
+})
+resid_resamp%&gt;%t%&gt;%as.data.frame%&gt;%summarize_all(sd)</code></pre>
+<pre><code>## (Intercept) AgeGroupMiddle AgeGroupYoung Pulse_c
+AgeGroupMiddle:Pulse_c AgeGroupYoung:Pulse_c
+## 1 4.105126 5.504804 5.951073 0.1345295 0.2025291
+0.2082238</code></pre>
+<p>I then reran the regression model for a third time, but this time computing the bootstrapped standard errors. In addition to the robust SEs, the bootstrapped SEs also had very similar values to the original SEs. I did not observe any extreme changes between the SEs or p-values when comparing each of the different methods.</p>
+<ol start="5" style="list-style-type: decimal">
+<li>LOGISTIC REGRESSION</li>
+</ol>
+<pre class="r"><code>library(tidyverse)
+#install.packages(&quot;lmtest&quot;)
+library(lmtest)
+#install.packages(&quot;sandwich&quot;)
+library(sandwich)
+#model
+fit5 &lt;- glm(Survive ~ Age + SysBP, data = ICU, family = &quot;binomial&quot;)
+summary(fit5)</code></pre>
+<pre><code>##
+## Call:
+## glm(formula = Survive ~ Age + SysBP, family =
+&quot;binomial&quot;, data = ICU)
+##
+## Deviance Residuals:
+## Min 1Q Median 3Q Max
+## -2.7828 0.3702 0.5361 0.7084 1.1376
+##
+## Coefficients:
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) 0.962471 1.000272 0.962 0.33594
+## Age -0.028407 0.010774 -2.637 0.00838 **
+## SysBP 0.016831 0.005859 2.873 0.00407 **
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## (Dispersion parameter for binomial family taken to be 1)
+##
+## Null deviance: 200.16 on 199 degrees of freedom
+## Residual deviance: 183.26 on 197 degrees of freedom
+## AIC: 189.26
+##
+## Number of Fisher Scoring iterations: 4</code></pre>
+<pre class="r"><code>exp(coef(fit5))</code></pre>
+<pre><code>## (Intercept)         Age       SysBP 
+##    2.618157    0.971993    1.016974</code></pre>
+<pre class="r"><code>#predicted probs
+probs&lt;-predict(fit5, type=&quot;response&quot;)
+#confusion matrix
+table(predict=as.numeric(probs&gt;.5),truth=ICU$Survive)%&gt;%addmargins</code></pre>
+<pre><code>##        truth
+## predict   0   1 Sum
+##     0     3   0   3
+##     1    37 160 197
+##     Sum  40 160 200</code></pre>
+<pre class="r"><code>#sensitivity = 1
+160/160</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>#specificity = 0.075
+3/40</code></pre>
+<pre><code>## [1] 0.075</code></pre>
+<pre class="r"><code>#precision = 0.8128
+160/197</code></pre>
+<pre><code>## [1] 0.8121827</code></pre>
+<pre class="r"><code>#accuracy = 0.815
+(3+160)/200</code></pre>
+<pre><code>## [1] 0.815</code></pre>
+<pre class="r"><code>#DENSITY plot
+ICU$logit&lt;-predict(fit5,type=&quot;link&quot;) #get log-odds for everyone
+logit&lt;-function(p)log(odds(p))
+ICU %&gt;% ggplot() + geom_density(aes(logit,color=Outcome,fill=Outcome), alpha=.4)+
+  theme(legend.position=c(.85,.85))+geom_vline(xintercept=0)+xlab(&quot;logit (log-odds)&quot;)+
+  geom_rug(aes(logit,color=Outcome)) </code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-6-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#ROCPLOT
+#install.packages(&quot;plotROC&quot;)
+library(plotROC)
+ROCplot&lt;-ggplot(ICU)+geom_roc(aes(d=Survive,m=probs), n.cuts=0) 
+ROCplot</code></pre>
+<p><img src="/project2_files/figure-html/unnamed-chunk-6-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#calculate AUC = 0.7016406
+calc_auc(ROCplot)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.7016406</code></pre>
+<pre class="r"><code>#out of sample CV FOLD
+class_diag&lt;-function(probs,truth){
+  
+  tab&lt;-table(factor(probs&gt;.5,levels=c(&quot;FALSE&quot;,&quot;TRUE&quot;)),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+  
+  if(is.numeric(truth)==FALSE &amp; is.logical(truth)==FALSE) truth&lt;-as.numeric(truth)-1
+  
+  #CALCULATE EXACT AUC
+  ord&lt;-order(probs, decreasing=TRUE)
+  probs &lt;- probs[ord]; truth &lt;- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup&lt;-c(prob[-1]&gt;=prob[-length(prob)], FALSE)
+  TPR&lt;-c(0,TPR[!dup],1); FPR&lt;-c(0,FPR[!dup],1)
+  
+  n &lt;- length(TPR)
+  auc&lt;- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+  
+  data.frame(acc,sens,spec,ppv,auc)
+}
+
+#10 fold CV
+set.seed(1234)
+k=10
+
+data1&lt;-ICU[sample(nrow(ICU)),] #put dataset in random order
+folds&lt;-cut(seq(1:nrow(ICU)),breaks=k,labels=F) #create folds
+
+diags&lt;-NULL
+for(i in 1:k){          # FOR EACH OF 10 FOLDS
+  train&lt;-data1[folds!=i,] # CREATE TRAINING SET
+  test&lt;-data1[folds==i,]  # CREATE TESTING SET
+  
+  truth&lt;-test$Survive
+  
+  #fit&lt;- glm(YOUR MODEL FROM ABOVE HERE, FIT TO TRAINING SET, i.e., data=train)
+  fit5&lt;- glm(Survive ~ Age + SysBP, data = train, family = &quot;binomial&quot;)
+  #probs&lt;- predict(GET PREDICTED PROBABILITIES FROM TRAINED MODEL USING TESTING SET AS NEW DATA, i.e., newdata=test)
+  prob&lt;-predict(fit5,newdata = test,type=&quot;response&quot;)
+  
+  diags&lt;-rbind(diags,class_diag(prob,truth)) #CV DIAGNOSTICS FOR EACH FOLD
+}
+
+summarize_all(diags,mean) #AVERAGE THE DIAGNOSTICS ACROSS THE 10 FOLDS</code></pre>
+<pre><code>##    acc    sens spec       ppv       auc
+## 1 0.81 0.99375 0.07 0.8110526 0.7115717</code></pre>
+<pre class="r"><code>diags%&gt;%summarize_all(mean)</code></pre>
+<pre><code>##    acc    sens spec       ppv       auc
+## 1 0.81 0.99375 0.07 0.8110526 0.7115717</code></pre>
+<p>I performed a logistic regression model to predict survival from age and systolic blood pressure. I obtained the following results…</p>
+<p>Coefficient interpretation:
+Controlling for age, SysBP has a significant positive impact on odds of survival (0.016831). For every additional 1mmHg increase in BP, odds of survival increase by factor of 1.016974.
+Controlling for BP, age has a significant negative impact on odds of survival (-0.028407). For every additional year in age (for every year older the patient is) odds of survival decrease by factor of 0.971993.</p>
+<p>According to my confusion matrix, the probability of predicting legendary and actually being legendary is 160/160, meaning the sensitivity/TPR is 1. Out of the 40 patients that did not survive, our model predicted only predicted that 3 of them would die, meaning the specitivity/TNR is 0.075. Out of the 197 patients that the model predicted to survive, 160 of them actually did survive, meaning the precision/PPV is 0.8128. The overall accuracy of the model is 0.815. I calculated the AUC to be 0.7016406, which is pretty fair (not great but not terrible)! After performing 10-fold cross validation, I computed the out-of-sample accuracy, sensitivity, and recall to be 0.81, 0.99375, and 0.07, respectively.</p>
+<ol start="6" style="list-style-type: decimal">
+<li>LASSO REGRESSION</li>
+</ol>
+<pre class="r"><code>#install.packages(&quot;glmnet&quot;)
+library(glmnet)
+ICU6 &lt;- ICU %&gt;% select(c(2,3,7,8,10,12,13))
+y&lt;-as.matrix(ICU6$Survive)
+head(y)</code></pre>
+<pre><code>##      [,1]
+## [1,]    0
+## [2,]    1
+## [3,]    1
+## [4,]    1
+## [5,]    0
+## [6,]    1</code></pre>
+<pre class="r"><code>x&lt;-model.matrix(Survive~.,data=ICU6)[,-1] #grab predictors
+head(x)</code></pre>
+<pre><code>## Age SysBP Pulse GenderMale AdmissionEmergency
+InfectedYes
+## 1 87 80 96 0 1 1
+## 2 27 142 88 0 1 1
+## 3 59 112 80 1 1 0
+## 4 77 100 70 1 0 0
+## 5 76 128 90 0 1 1
+## 6 54 142 103 1 1 1</code></pre>
+<pre class="r"><code>#standardize x
+x&lt;-scale(x)
+cv&lt;-cv.glmnet(x,y,family=&quot;binomial&quot;)
+lasso&lt;-glmnet(x,y,family=&quot;binomial&quot;,lambda=cv$lambda.1se)
+coef(lasso)</code></pre>
+<pre><code>## 7 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                            s0
+## (Intercept)         1.4372807
+## Age                -0.2159144
+## SysBP               0.1404601
+## Pulse               .        
+## GenderMale          .        
+## AdmissionEmergency -0.3413071
+## InfectedYes        -0.0149304</code></pre>
+<pre class="r"><code>#CV under LASSO model...
+ICU6 &lt;- ICU6 %&gt;% mutate(Emergency=ifelse(Admission==&quot;Emergency&quot;,1,0))
+lassofit &lt;- glm(Survive~Age+SysBP+Emergency, data=ICU6, family=&quot;binomial&quot;)
+summary(lassofit)</code></pre>
+<pre><code>##
+## Call:
+## glm(formula = Survive ~ Age + SysBP + Emergency, family
+= &quot;binomial&quot;,
+## data = ICU6)
+##
+## Deviance Residuals:
+## Min 1Q Median 3Q Max
+## -2.6660 0.2026 0.4227 0.6880 1.2364
+##
+## Coefficients:
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) 3.678554 1.306521 2.816 0.00487 **
+## Age -0.033946 0.010865 -3.124 0.00178 **
+## SysBP 0.013229 0.005985 2.210 0.02709 *
+## Emergency -2.287625 0.758168 -3.017 0.00255 **
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## (Dispersion parameter for binomial family taken to be 1)
+##
+## Null deviance: 200.16 on 199 degrees of freedom
+## Residual deviance: 167.82 on 196 degrees of freedom
+## AIC: 175.82
+##
+## Number of Fisher Scoring iterations: 6</code></pre>
+<pre class="r"><code>probs&lt;-predict(lassofit, type = &quot;response&quot;)
+#classification diagnostics
+set.seed(1234)
+k=10
+data &lt;- ICU6 %&gt;% sample_frac #put rows of dataset in random order
+folds &lt;- ntile(1:nrow(data),n=10) #create fold labels
+diags&lt;-NULL
+for(i in 1:k){
+  train &lt;- data[folds!=i,] #create training set (all but fold i)
+  test &lt;- data[folds==i,] #create test set (just fold i)
+  truth &lt;- test$Survive #save truth labels from fold i
+  lassofit &lt;- glm(Survive~Age+SysBP+Emergency, data=train, family=&quot;binomial&quot;)
+  probs &lt;- predict(lassofit, newdata=test, type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+diags%&gt;%summarize_all(mean)</code></pre>
+<pre><code>##   acc      sens      spec       ppv       auc
+## 1 0.8 0.9632353 0.1316667 0.8189693 0.7677385</code></pre>
+<p>According to my lasso regression, the only variables that are retained are Age, SysBP, Admission, and Infected. I then created a model with only these variables and performed another 10-fold CV. Surprisingly, the out-of-sample accuracy from my lasso regression was lower than the accuracy of my original logistic regression. However, it was only a slight decrease (from 0.81 to 0.80) and the overall AUC increased about ~0.6 (from 0.7115717 to 0.7677385).</p>

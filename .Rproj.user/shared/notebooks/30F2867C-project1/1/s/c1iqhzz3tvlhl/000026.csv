@@ -1,0 +1,1 @@
+"0","MC_MERGED %>% group_by(`Manner of Death`,Race,`Incident City`,Gender) %>% summarize(mean_Age=mean(Age), sd_Age=sd(Age), med_Age=median(Age), var_Age=var(Age), max_Age=max(Age), min_Age=min(Age))"

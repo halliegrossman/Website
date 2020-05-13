@@ -1,0 +1,5 @@
+"0","library(readr)"
+"0","original_MC <- read_csv(""Medical_Examiner_Case_Archive.csv"")"
+"0","MC_1 <- original_MC %>% select(1:7)"
+"0","MC_2 <- original_MC %>% select(-(2:7))"
+"0","MC_MERGED <- MC_1 %>% full_join(MC_2)"

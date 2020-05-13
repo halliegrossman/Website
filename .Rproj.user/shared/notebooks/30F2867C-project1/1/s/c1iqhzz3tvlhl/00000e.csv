@@ -1,0 +1,2 @@
+"0",""
+"0","MC_MERGED %>% group_by(`Primary Cause`) %>% summarize(mean_age= mean(Age))"

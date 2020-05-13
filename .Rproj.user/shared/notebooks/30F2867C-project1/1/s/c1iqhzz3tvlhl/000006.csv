@@ -1,0 +1,4 @@
+"0",""
+"0","#SUMMARY FUNCTIONS"
+"0","#test numeric functions and and if so apply the mean, sd, "
+"0","MC_MERGED %>% summarise_if(is.numeric,mean,na.rm=T)"

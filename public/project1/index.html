@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Hallie Grossman" />
+    <meta name="description" content="Describe your website">
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Project 1: Exploratory Data Analysis</title>
+    <meta name="generator" content="Hugo 0.70.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/blog/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/project1/">Project 1: Exploratory Data Analysis</a></strong>
+          </h3>
+        </div>
+        <div class="blog-title">
+          <h4>
+          January 1, 0001
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="introduction-4-pts" class="section level4">
+<h4>0. Introduction (4 pts)</h4>
+<pre class="r"><code>library(dplyr)
+library(ggplot2)
+library(ggExtra)
+library(tidyverse)
+library(tidyselect)
+library(tidyr)
+library(reshape)
+library(reshape2)
+library(cluster)
+library(GGally)
+library(knitr)
+library(ggridges)
+
+library(readr)
+original_MC &lt;- read_csv(&quot;Medical_Examiner_Case_Archive.csv&quot;)
+MC_1 &lt;- original_MC %&gt;% select(1:7)
+MC_2 &lt;- original_MC %&gt;% select(-(2:7))
+MC_MERGED &lt;- MC_1 %&gt;% full_join(MC_2)</code></pre>
+<p>I have chosen a dataset containing the details on the medical cases of deaths that have occurred in Cook County, IL. I acquired this dataset from the Cook County Government’s website (<a href="https://datacatalog.cookcountyil.gov/Public-Safety/Medical-Examiner-Case-Archive/cjeq-bs86" class="uri">https://datacatalog.cookcountyil.gov/Public-Safety/Medical-Examiner-Case-Archive/cjeq-bs86</a>). Since the variables within the dataset are quite specific, I was not able to find a second dataset that would join well with this one. Instead, I just separated the two datasets and then recombined them with the Case Number being their common variable. In addition to case number, the first dataset contained information regarding the demographics of the individual (Race, age, Gender, and whether or not they were Latino). The dataset I joined it with contained the case number and information regarding the their death and the incident that occurred prior to their death. Specifically, the variables include date and time, manner of death, primary cause, secondary cause, address, city, zip-code, and latitude and longitude for both the incident and death. The city and zip-code in which the individual lived and whether their deaths were related to guns, opioids, or extreme temperature (hot or cold) were are also included. The original dataset also included a variable called ObjectID, however it was not useful or of interest to me so I got rid of it.</p>
+<p>I decided to choose this as my dataset for two reasons. First, I was looking for something medical related, as I am a pre-med student. I am always fascinated by medical diagnoses and I thought it would be cool to investigate the most common causes of fatalities in general, and also among certain demographic groups. While there were many similar datasets I could have chosen, this one was of particular interest to me because I am from Chicago. The suburb I live in is considered to be in Lake County, but our neighboring county is Cook. Moreover, I liked that I could actually picture some of the places these incidents occurred, and even connect some of them to news articles I remember reading during the time it happened. Knowing where the “bad” neighborhoods are, I do expect to find some associations. For example, I would imagine a majority of the homicides to occur close to Riverdale because this is what people consider the south side of Chicago. In addition, I know there is quite a bit of hate crime that goes on against Blacks. That being said, I also expect to find an association between race and homicide victims.</p>
+</div>
+<div id="tidying-rearranging-widelong-8-pts" class="section level4">
+<h4>1. Tidying: Rearranging Wide/Long (8 pts)</h4>
+<pre class="r"><code>MC_wide &lt;- MC_MERGED %&gt;% pivot_wider(names_from = &quot;Gender&quot;, values_from = &quot;Manner of Death&quot;)
+MC_long &lt;- MC_wide %&gt;% pivot_longer(c(&quot;Male&quot;, &quot;Female&quot;), names_to = &quot;Gender&quot;, 
+    values_to = &quot;Manner of Death&quot;)</code></pre>
+<p>Since my joined dataset was already tidy, I used the pivot functions to make my data easier to read. I used pivot_wider to expand my “Gender” column into separate “Male” and “Female” columns containing their respective manner of death. I then used pivot_longer to combine the Male and Female columns back into a single “Gender” column.</p>
+</div>
+<div id="joiningmerging-8-pts" class="section level4">
+<h4>2. Joining/Merging (8 pts)</h4>
+<pre class="r"><code>library(readr)
+original_MC &lt;- read_csv(&quot;Medical_Examiner_Case_Archive.csv&quot;)
+MC_1 &lt;- original_MC %&gt;% select(1:7)
+MC_2 &lt;- original_MC %&gt;% select(-(2:7))
+MC_MERGED &lt;- MC_1 %&gt;% full_join(MC_2)</code></pre>
+<p>When combining my two datasets, I chose to use a full_join so all of my original data would be retained. Furthermore, none of my rows were dropped (all cases were kept). I joined my two datasets (“demo_MC” and “incident_MC”) by their common variable “Case.Number.”</p>
+</div>
+<div id="wrangling-40-pts" class="section level4">
+<h4>3. Wrangling (40 pts)</h4>
+<pre class="r"><code># remove unwanted variables
+MC_MERGED &lt;- MC_MERGED %&gt;% select(-location) %&gt;% select(-OBJECTID)
+# use select to reorder variables (move cold and heat related
+# next to opioid and gun related)
+MC_MERGED &lt;- MC_MERGED %&gt;% select(1:14, `Cold Related`, `Heat Related`, 
+    everything())
+# separate month,year,date from time
+MC_MERGED &lt;- MC_MERGED %&gt;% separate(&quot;Date of Incident&quot;, into = c(&quot;incident.month&quot;, 
+    &quot;incident.day&quot;, &quot;incident.year&quot;), sep = &quot;/&quot;)
+MC_MERGED &lt;- MC_MERGED %&gt;% separate(incident.year, into = c(&quot;incident.year&quot;, 
+    &quot;incident.time&quot;), sep = 4)
+# separate year month date time for death date
+MC_MERGED &lt;- MC_MERGED %&gt;% separate(&quot;Date of Death&quot;, into = c(&quot;death.month&quot;, 
+    &quot;death.day&quot;, &quot;death.year&quot;), sep = &quot;/&quot;)
+MC_MERGED &lt;- MC_MERGED %&gt;% separate(death.year, into = c(&quot;death.year&quot;, 
+    &quot;death.time&quot;), sep = 4)
+# make object vector with all years/months dates and make
+# numeric
+death_month &lt;- MC_MERGED$death.month
+death_month &lt;- as.numeric(death_month)
+death_year &lt;- MC_MERGED$death.year
+death_year &lt;- as.numeric(death_year)
+incident_month &lt;- MC_MERGED$incident.month
+incident_month &lt;- as.numeric(incident_month)
+incident_year &lt;- MC_MERGED$incident.year
+incident_year &lt;- as.numeric(incident_year)
+# MUTATE to make new column time between incident and death
+MC_MERGED &lt;- MC_MERGED %&gt;% mutate(months.between.incident.and.death = ((death_year - 
+    incident_year) * 12) + (abs(death_month - incident_month)))
+# change months to names
+MC_MERGED &lt;- MC_MERGED %&gt;% mutate(incident.month = case_when(incident.month == 
+    &quot;01&quot; ~ &quot;January&quot;, incident.month == &quot;02&quot; ~ &quot;February&quot;, incident.month == 
+    &quot;03&quot; ~ &quot;March&quot;, incident.month == &quot;04&quot; ~ &quot;April&quot;, incident.month == 
+    &quot;05&quot; ~ &quot;May&quot;, incident.month == &quot;06&quot; ~ &quot;June&quot;, incident.month == 
+    &quot;07&quot; ~ &quot;July&quot;, incident.month == &quot;08&quot; ~ &quot;August&quot;, incident.month == 
+    &quot;09&quot; ~ &quot;September&quot;, incident.month == &quot;10&quot; ~ &quot;October&quot;, incident.month == 
+    &quot;11&quot; ~ &quot;November&quot;, incident.month == &quot;12&quot; ~ &quot;December&quot;)) %&gt;% 
+    mutate(death.month = case_when(death.month == &quot;01&quot; ~ &quot;January&quot;, 
+        death.month == &quot;02&quot; ~ &quot;February&quot;, death.month == &quot;03&quot; ~ 
+            &quot;March&quot;, death.month == &quot;04&quot; ~ &quot;April&quot;, death.month == 
+            &quot;05&quot; ~ &quot;May&quot;, death.month == &quot;06&quot; ~ &quot;June&quot;, death.month == 
+            &quot;07&quot; ~ &quot;July&quot;, death.month == &quot;08&quot; ~ &quot;August&quot;, death.month == 
+            &quot;09&quot; ~ &quot;September&quot;, death.month == &quot;10&quot; ~ &quot;October&quot;, 
+        death.month == &quot;11&quot; ~ &quot;November&quot;, death.month == &quot;12&quot; ~ 
+            &quot;December&quot;))
+# add numeric dates to dataset
+MC_MERGED &lt;- MC_MERGED %&gt;% mutate(numeric.death.month = death_month) %&gt;% 
+    mutate(numeric.death.year = death_year) %&gt;% mutate(numeric.incident.month = incident_month) %&gt;% 
+    mutate(numeric.incident.year = incident_year)
+# use arrange to order by ascending age
+MC_MERGED %&gt;% arrange(Age)</code></pre>
+<pre><code>## # A tibble: 34,086 x 34
+##    `Case Number` incident.month incident.day incident.year incident.time
+##    &lt;chr&gt;         &lt;chr&gt;          &lt;chr&gt;        &lt;chr&gt;         &lt;chr&gt;        
+##  1 ME2016-00941  February       22           2016          &quot; 07:20:00 P…
+##  2 ME2018-05629  November       28           2018          &quot; 08:13:00 A…
+##  3 ME2015-00387  January        26           2015          &quot; 09:39:00 P…
+##  4 ME2019-03646  August         05           2019          &quot; 11:00:00 P…
+##  5 ME2016-06129  December       21           2016          &quot; 07:04:00 A…
+##  6 ME2016-05308  November       05           2016          &quot; 01:24:00 A…
+##  7 ME2016-01974  April          13           2016          &quot; 12:00:00 A…
+##  8 ME2015-05211  December       02           2015          &quot; 06:58:00 A…
+##  9 ME2017-00159  January        10           2017          &quot; 04:30:00 A…
+## 10 ME2014-00516  September      13           2014          &quot; 10:00:00 P…
+## # … with 34,076 more rows, and 29 more variables: death.month &lt;chr&gt;,
+## #   death.day &lt;chr&gt;, death.year &lt;chr&gt;, death.time &lt;chr&gt;, Age &lt;dbl&gt;,
+## #   Gender &lt;chr&gt;, Race &lt;chr&gt;, Latino &lt;lgl&gt;, `Manner of Death` &lt;chr&gt;, `Primary
+## #   Cause` &lt;chr&gt;, `Primary Cause Line B` &lt;chr&gt;, `Primary Cause Line C` &lt;lgl&gt;,
+## #   `Secondary Cause` &lt;chr&gt;, `Gun Related` &lt;lgl&gt;, `Opioid Related` &lt;lgl&gt;, `Cold
+## #   Related` &lt;chr&gt;, `Heat Related` &lt;chr&gt;, `Incident Address` &lt;chr&gt;, `Incident
+## #   City` &lt;chr&gt;, longitude &lt;dbl&gt;, latitude &lt;dbl&gt;, `Incident Zip Code` &lt;dbl&gt;,
+## #   `Residence City` &lt;chr&gt;, Residence_Zip &lt;dbl&gt;,
+## #   months.between.incident.and.death &lt;dbl&gt;, numeric.death.month &lt;dbl&gt;,
+## #   numeric.death.year &lt;dbl&gt;, numeric.incident.month &lt;dbl&gt;,
+## #   numeric.incident.year &lt;dbl&gt;</code></pre>
+<pre class="r"><code># summarize all distinct per row
+MC_MERGED %&gt;% summarise_all(n_distinct)</code></pre>
+<pre><code>## # A tibble: 1 x 34
+##   `Case Number` incident.month incident.day incident.year incident.time
+##           &lt;int&gt;          &lt;int&gt;        &lt;int&gt;         &lt;int&gt;         &lt;int&gt;
+## 1         34086             12           31            50          1439
+## # … with 29 more variables: death.month &lt;int&gt;, death.day &lt;int&gt;,
+## #   death.year &lt;int&gt;, death.time &lt;int&gt;, Age &lt;int&gt;, Gender &lt;int&gt;, Race &lt;int&gt;,
+## #   Latino &lt;int&gt;, `Manner of Death` &lt;int&gt;, `Primary Cause` &lt;int&gt;, `Primary
+## #   Cause Line B` &lt;int&gt;, `Primary Cause Line C` &lt;int&gt;, `Secondary Cause` &lt;int&gt;,
+## #   `Gun Related` &lt;int&gt;, `Opioid Related` &lt;int&gt;, `Cold Related` &lt;int&gt;, `Heat
+## #   Related` &lt;int&gt;, `Incident Address` &lt;int&gt;, `Incident City` &lt;int&gt;,
+## #   longitude &lt;int&gt;, latitude &lt;int&gt;, `Incident Zip Code` &lt;int&gt;, `Residence
+## #   City` &lt;int&gt;, Residence_Zip &lt;int&gt;, months.between.incident.and.death &lt;int&gt;,
+## #   numeric.death.month &lt;int&gt;, numeric.death.year &lt;int&gt;,
+## #   numeric.incident.month &lt;int&gt;, numeric.incident.year &lt;int&gt;</code></pre>
+<pre class="r"><code># SUMMARY FUNCTIONS test numeric functions and and if so
+# apply the mean, sd,
+MC_MERGED %&gt;% summarise_if(is.numeric, mean, na.rm = T)</code></pre>
+<pre><code>## # A tibble: 1 x 10
+##     Age longitude latitude `Incident Zip C… Residence_Zip months.between.…
+##   &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;            &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;
+## 1  51.5     -87.7     41.8           60450.        60098.            0.992
+## # … with 4 more variables: numeric.death.month &lt;dbl&gt;, numeric.death.year &lt;dbl&gt;,
+## #   numeric.incident.month &lt;dbl&gt;, numeric.incident.year &lt;dbl&gt;</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% summarise_if(is.numeric, sd, na.rm = T)</code></pre>
+<pre><code>## # A tibble: 1 x 10
+##     Age longitude latitude `Incident Zip C… Residence_Zip months.between.…
+##   &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;            &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;
+## 1  20.8     0.115    0.135            6229.         4240.             17.9
+## # … with 4 more variables: numeric.death.month &lt;dbl&gt;, numeric.death.year &lt;dbl&gt;,
+## #   numeric.incident.month &lt;dbl&gt;, numeric.incident.year &lt;dbl&gt;</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% summarise_if(is.numeric, list(min = min, max = max), 
+    na.rm = T)</code></pre>
+<pre><code>## # A tibble: 1 x 20
+##   Age_min longitude_min latitude_min `Incident Zip C… Residence_Zip_m…
+##     &lt;dbl&gt;         &lt;dbl&gt;        &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+## 1       0         -88.3         41.5                0              627
+## # … with 15 more variables: months.between.incident.and.death_min &lt;dbl&gt;,
+## #   numeric.death.month_min &lt;dbl&gt;, numeric.death.year_min &lt;dbl&gt;,
+## #   numeric.incident.month_min &lt;dbl&gt;, numeric.incident.year_min &lt;dbl&gt;,
+## #   Age_max &lt;dbl&gt;, longitude_max &lt;dbl&gt;, latitude_max &lt;dbl&gt;, `Incident Zip
+## #   Code_max` &lt;dbl&gt;, Residence_Zip_max &lt;dbl&gt;,
+## #   months.between.incident.and.death_max &lt;dbl&gt;, numeric.death.month_max &lt;dbl&gt;,
+## #   numeric.death.year_max &lt;dbl&gt;, numeric.incident.month_max &lt;dbl&gt;,
+## #   numeric.incident.year_max &lt;dbl&gt;</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% summarise_if(is.numeric, list(Q3 = quantile), probs = 0.75, 
+    na.rm = T)</code></pre>
+<pre><code>## # A tibble: 1 x 10
+##   Age_Q3 longitude_Q3 latitude_Q3 `Incident Zip C… Residence_Zip_Q3
+##    &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+## 1     65        -87.6        41.9            60637            60637
+## # … with 5 more variables: months.between.incident.and.death_Q3 &lt;dbl&gt;,
+## #   numeric.death.month_Q3 &lt;dbl&gt;, numeric.death.year_Q3 &lt;dbl&gt;,
+## #   numeric.incident.month_Q3 &lt;dbl&gt;, numeric.incident.year_Q3 &lt;dbl&gt;</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(`Primary Cause`) %&gt;% summarize(mean_age = mean(Age))</code></pre>
+<pre><code>## # A tibble: 5,812 x 2
+##    `Primary Cause`                          mean_age
+##    &lt;chr&gt;                                       &lt;dbl&gt;
+##  1 .                                              65
+##  2 .ARTERIOSCLEROTIC CARDIOVASCULAR DISEASE       72
+##  3 .GUNSHOT WOUND OF CHEST                        19
+##  4 .HYPERTENSIVE CARDIOVASCULAR DISEASE           72
+##  5 .MASSIVE GASTROINTESTINAL HEMORRHAGE           45
+##  6 .MULTIPLE GUNSHOT WOUNDS                       37
+##  7 .MULTIPLE INJURIES                             65
+##  8 .ORGANIC CARDIOVASCULAR DISEASE                73
+##  9 1, 1 DIFLUOROETHANE TOXICITY                   50
+## 10 1,1 - DIFLUOROETHANE TOXICITY                  38
+## # … with 5,802 more rows</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(Race) %&gt;% summarize(mean_age = mean(Age))</code></pre>
+<pre><code>## # A tibble: 7 x 2
+##   Race       mean_age
+##   &lt;chr&gt;         &lt;dbl&gt;
+## 1 Am. Indian     48.2
+## 2 Asian          57.6
+## 3 Black          47.8
+## 4 Other          48.8
+## 5 Unknown        52.6
+## 6 White          54.2
+## 7 &lt;NA&gt;           51.0</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(Gender) %&gt;% summarize(mean_age = mean(Age))</code></pre>
+<pre><code>## # A tibble: 4 x 2
+##   Gender  mean_age
+##   &lt;chr&gt;      &lt;dbl&gt;
+## 1 Female      56.3
+## 2 Male        49.6
+## 3 Unknown     44.9
+## 4 &lt;NA&gt;        50.3</code></pre>
+<pre class="r"><code>MC_wide %&gt;% group_by(Male, Female) %&gt;% summarize(mean_age = mean(Age))</code></pre>
+<pre><code>## # A tibble: 13 x 3
+## # Groups:   Male [7]
+##    Male         Female       mean_age
+##    &lt;chr&gt;        &lt;chr&gt;           &lt;dbl&gt;
+##  1 ACCIDENT     &lt;NA&gt;             50.1
+##  2 HOMICIDE     &lt;NA&gt;             29.5
+##  3 NATURAL      &lt;NA&gt;             59.4
+##  4 PENDING      &lt;NA&gt;             47.8
+##  5 SUICIDE      &lt;NA&gt;             46.0
+##  6 UNDETERMINED &lt;NA&gt;             28.0
+##  7 &lt;NA&gt;         ACCIDENT         58.0
+##  8 &lt;NA&gt;         HOMICIDE         33.4
+##  9 &lt;NA&gt;         NATURAL          62.3
+## 10 &lt;NA&gt;         PENDING          46.5
+## 11 &lt;NA&gt;         SUICIDE          44.1
+## 12 &lt;NA&gt;         UNDETERMINED     20.6
+## 13 &lt;NA&gt;         &lt;NA&gt;             49.8</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(Race, Gender) %&gt;% summarize(mean_age = mean(Age))</code></pre>
+<pre><code>## # A tibble: 20 x 3
+## # Groups:   Race [7]
+##    Race       Gender  mean_age
+##    &lt;chr&gt;      &lt;chr&gt;      &lt;dbl&gt;
+##  1 Am. Indian Female      45.6
+##  2 Am. Indian Male        49.2
+##  3 Asian      Female      61.9
+##  4 Asian      Male        55.6
+##  5 Black      Female      51.7
+##  6 Black      Male        46.4
+##  7 Black      &lt;NA&gt;        24  
+##  8 Other      Female      55.9
+##  9 Other      Male        46.6
+## 10 Other      &lt;NA&gt;        46  
+## 11 Unknown    Female      51.3
+## 12 Unknown    Male        56.7
+## 13 Unknown    Unknown     48.4
+## 14 White      Female      59.5
+## 15 White      Male        52.0
+## 16 White      &lt;NA&gt;        40  
+## 17 &lt;NA&gt;       Female      56.7
+## 18 &lt;NA&gt;       Male        51.2
+## 19 &lt;NA&gt;       Unknown     34.2
+## 20 &lt;NA&gt;       &lt;NA&gt;        51</code></pre>
+<pre class="r"><code>MC_wide %&gt;% group_by(Male, Female, Race) %&gt;% summarize(mean_age = mean(Age))</code></pre>
+<pre><code>## # A tibble: 81 x 4
+## # Groups:   Male, Female [13]
+##    Male     Female Race       mean_age
+##    &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt;         &lt;dbl&gt;
+##  1 ACCIDENT &lt;NA&gt;   Am. Indian     43.7
+##  2 ACCIDENT &lt;NA&gt;   Asian          55.8
+##  3 ACCIDENT &lt;NA&gt;   Black          50.8
+##  4 ACCIDENT &lt;NA&gt;   Other          48.9
+##  5 ACCIDENT &lt;NA&gt;   Unknown        63.9
+##  6 ACCIDENT &lt;NA&gt;   White          49.6
+##  7 ACCIDENT &lt;NA&gt;   &lt;NA&gt;           60.1
+##  8 HOMICIDE &lt;NA&gt;   Am. Indian     30.5
+##  9 HOMICIDE &lt;NA&gt;   Asian          49.7
+## 10 HOMICIDE &lt;NA&gt;   Black          28.8
+## # … with 71 more rows</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% filter(`Gun Related`) %&gt;% group_by(Race, Gender) %&gt;% 
+    summarize(n())</code></pre>
+<pre><code>## # A tibble: 12 x 3
+## # Groups:   Race [7]
+##    Race       Gender `n()`
+##    &lt;chr&gt;      &lt;chr&gt;  &lt;int&gt;
+##  1 Am. Indian Male       3
+##  2 Asian      Female     3
+##  3 Asian      Male      20
+##  4 Black      Female   221
+##  5 Black      Male    2825
+##  6 Other      Female     2
+##  7 Other      Male      33
+##  8 Unknown    Female     1
+##  9 White      Female   137
+## 10 White      Male    1136
+## 11 &lt;NA&gt;       Male       2
+## 12 &lt;NA&gt;       &lt;NA&gt;       1</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(Gender, Race) %&gt;% summarize(mean_Age = mean(Age), 
+    sd_Age = sd(Age), med_Age = median(Age), var_Age = var(Age), 
+    max_Age = max(Age), min_Age = min(Age))</code></pre>
+<pre><code>## # A tibble: 20 x 8
+## # Groups:   Gender [4]
+##    Gender  Race       mean_Age sd_Age med_Age var_Age max_Age min_Age
+##    &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+##  1 Female  Am. Indian     45.6   26.3    53      694.      82       0
+##  2 Female  Asian          61.9   22.5    68      508.     100       0
+##  3 Female  Black          51.7   21.3    54      454.     103       0
+##  4 Female  Other          55.9   24.3    59      591.      94       0
+##  5 Female  Unknown        51.3   29.5    60      873.      94       0
+##  6 Female  White          59.5   22.9    61      525.     107       0
+##  7 Female  &lt;NA&gt;           56.7   27.2    60.5    742.      89       0
+##  8 Male    Am. Indian     49.2   15.4    53      238.      76      20
+##  9 Male    Asian          55.6   20.6    58      422.     101       0
+## 10 Male    Black          46.4   19.6    49      383.     100       0
+## 11 Male    Other          46.6   21.6    46      467.      97       0
+## 12 Male    Unknown        56.7   16.0    57      257.      88      25
+## 13 Male    White          52.0   19.3    53      371.     101       0
+## 14 Male    &lt;NA&gt;           51.2   21.6    51      467.      97       0
+## 15 Unknown Unknown        48.4   21.8    41.5    474.      93       0
+## 16 Unknown &lt;NA&gt;           34.2   38.7    25     1498.     101       0
+## 17 &lt;NA&gt;    Black          24     31.1    24      968       46       2
+## 18 &lt;NA&gt;    Other          46     NA      46       NA       46      46
+## 19 &lt;NA&gt;    White          40     35.3    37     1247.      86       0
+## 20 &lt;NA&gt;    &lt;NA&gt;           51     21.9    54      479.      93       0</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(`Manner of Death`) %&gt;% summarize(mean_Age = mean(Age), 
+    sd_Age = sd(Age), med_Age = median(Age), var_Age = var(Age), 
+    max_Age = max(Age), min_Age = min(Age))</code></pre>
+<pre><code>## # A tibble: 7 x 7
+##   `Manner of Death` mean_Age sd_Age med_Age var_Age max_Age min_Age
+##   &lt;chr&gt;                &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 ACCIDENT              52.5   20.7      52    428.     107       0
+## 2 HOMICIDE              29.9   13.6      26    186.      98       0
+## 3 NATURAL               60.3   15.7      61    247.     105       0
+## 4 PENDING               47.4   17.8      49    316.     100       0
+## 5 SUICIDE               45.5   18.4      45    339.      99       8
+## 6 UNDETERMINED          25.8   25.8      25    664.      97       0
+## 7 &lt;NA&gt;                  49.7   26.2      56    686.     106       0</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(`Manner of Death`, Race, Gender) %&gt;% summarize(mean_Age = mean(Age), 
+    sd_Age = sd(Age), med_Age = median(Age), var_Age = var(Age), 
+    max_Age = max(Age), min_Age = min(Age))</code></pre>
+<pre><code>## # A tibble: 98 x 9
+## # Groups:   Manner of Death, Race [45]
+##    `Manner of Deat… Race  Gender mean_Age sd_Age med_Age var_Age max_Age min_Age
+##    &lt;chr&gt;            &lt;chr&gt; &lt;chr&gt;     &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+##  1 ACCIDENT         Am. … Female     50.2   23.3    44.5    543.      82      30
+##  2 ACCIDENT         Am. … Male       43.7   17.4    45      302.      68      23
+##  3 ACCIDENT         Asian Female     64.4   25.0    70.5    625.     100       0
+##  4 ACCIDENT         Asian Male       55.8   23.2    60      537.      97      16
+##  5 ACCIDENT         Black Female     52.0   18.9    52      357.     101       0
+##  6 ACCIDENT         Black Male       50.8   15.9    53      251.      97       0
+##  7 ACCIDENT         Other Female     64.4   21.0    69      440.      92       4
+##  8 ACCIDENT         Other Male       48.9   23.7    50      561.      97       1
+##  9 ACCIDENT         Unkn… Female     73     15.7    70      247       90      59
+## 10 ACCIDENT         Unkn… Male       63.9   18.7    66.5    349.      88      27
+## # … with 88 more rows</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(`Manner of Death`) %&gt;% summarize(med_year = median(numeric.death.year))</code></pre>
+<pre><code>## # A tibble: 7 x 2
+##   `Manner of Death` med_year
+##   &lt;chr&gt;                &lt;dbl&gt;
+## 1 ACCIDENT              2017
+## 2 HOMICIDE              2017
+## 3 NATURAL               2017
+## 4 PENDING               2020
+## 5 SUICIDE               2017
+## 6 UNDETERMINED          2017
+## 7 &lt;NA&gt;                  2017</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(`Manner of Death`) %&gt;% summarize(med_month = median(numeric.incident.month))</code></pre>
+<pre><code>## # A tibble: 7 x 2
+##   `Manner of Death` med_month
+##   &lt;chr&gt;                 &lt;dbl&gt;
+## 1 ACCIDENT                  7
+## 2 HOMICIDE                  7
+## 3 NATURAL                   7
+## 4 PENDING                   3
+## 5 SUICIDE                   7
+## 6 UNDETERMINED              7
+## 7 &lt;NA&gt;                      6</code></pre>
+<pre class="r"><code>MC_MERGED %&gt;% group_by(`Manner of Death`, Race, `Incident City`, 
+    Gender) %&gt;% summarize(mean_Age = mean(Age), sd_Age = sd(Age), 
+    med_Age = median(Age), var_Age = var(Age), max_Age = max(Age), 
+    min_Age = min(Age))</code></pre>
+<pre><code>## # A tibble: 2,521 x 10
+## # Groups:   Manner of Death, Race, Incident City [1,738]
+##    `Manner of Deat… Race  `Incident City` Gender mean_Age sd_Age med_Age var_Age
+##    &lt;chr&gt;            &lt;chr&gt; &lt;chr&gt;           &lt;chr&gt;     &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+##  1 ACCIDENT         Am. … CHICAGO         Female     44.5   12.0    44.5    144.
+##  2 ACCIDENT         Am. … CHICAGO         Male       35.4   12.0    31      145.
+##  3 ACCIDENT         Am. … DES PLAINES     Male       61     NA      61       NA 
+##  4 ACCIDENT         Am. … HAZEL CREST     Female     82     NA      82       NA 
+##  5 ACCIDENT         Am. … PHOENIX         Male       68     NA      68       NA 
+##  6 ACCIDENT         Am. … TINLEY PARK     Female     30     NA      30       NA 
+##  7 ACCIDENT         Asian ADDISON         Female     86     NA      86       NA 
+##  8 ACCIDENT         Asian ARLINGTON HEIG… Female     36.5   34.6    36.5   1200.
+##  9 ACCIDENT         Asian ARLINGTON HEIG… Male       48.3   28.9    54      836.
+## 10 ACCIDENT         Asian AURORA          Male       48     NA      48       NA 
+## # … with 2,511 more rows, and 2 more variables: max_Age &lt;dbl&gt;, min_Age &lt;dbl&gt;</code></pre>
+<pre class="r"><code># correlation matrix
+MC_MERGED %&gt;% select_if(is.numeric) %&gt;% cor(use = &quot;na.or.complete&quot;)</code></pre>
+<pre><code>##                                            Age    longitude      latitude
+## Age                                1.000000000 -0.116256127  0.0821085115
+## longitude                         -0.116256127  1.000000000 -0.4980650091
+## latitude                           0.082108512 -0.498065009  1.0000000000
+## Incident Zip Code                 -0.012349646  0.029369455 -0.0046904403
+## Residence_Zip                      0.026102615  0.005587566 -0.0111823568
+## months.between.incident.and.death  0.005129494  0.010541233 -0.0083874210
+## numeric.death.month               -0.012171589 -0.007217274 -0.0001306938
+## numeric.death.year                 0.006715400  0.011134487 -0.0009517940
+## numeric.incident.month            -0.011616839 -0.005916942 -0.0024432742
+## numeric.incident.year              0.006069003  0.004231093  0.0034377465
+##                                   Incident Zip Code Residence_Zip
+## Age                                   -0.0123496462   0.026102615
+## longitude                              0.0293694548   0.005587566
+## latitude                              -0.0046904403  -0.011182357
+## Incident Zip Code                      1.0000000000   0.003241100
+## Residence_Zip                          0.0032411003   1.000000000
+## months.between.incident.and.death      0.0001601732   0.002887144
+## numeric.death.month                    0.0071563574  -0.001762265
+## numeric.death.year                    -0.0086937308  -0.001032702
+## numeric.incident.month                 0.0072029492  -0.002715420
+## numeric.incident.year                 -0.0080619709  -0.002548161
+##                                   months.between.incident.and.death
+## Age                                                    0.0051294944
+## longitude                                              0.0105412325
+## latitude                                              -0.0083874210
+## Incident Zip Code                                      0.0001601732
+## Residence_Zip                                          0.0028871435
+## months.between.incident.and.death                      1.0000000000
+## numeric.death.month                                   -0.0143336015
+## numeric.death.year                                     0.0848639580
+## numeric.incident.month                                 0.0085561289
+## numeric.incident.year                                 -0.4157348804
+##                                   numeric.death.month numeric.death.year
+## Age                                     -0.0121715893        0.006715400
+## longitude                               -0.0072172739        0.011134487
+## latitude                                -0.0001306938       -0.000951794
+## Incident Zip Code                        0.0071563574       -0.008693731
+## Residence_Zip                           -0.0017622646       -0.001032702
+## months.between.incident.and.death       -0.0143336015        0.084863958
+## numeric.death.month                      1.0000000000       -0.203237882
+## numeric.death.year                      -0.2032378820        1.000000000
+## numeric.incident.month                   0.9743737765       -0.195530427
+## numeric.incident.year                   -0.1807675453        0.870241340
+##                                   numeric.incident.month numeric.incident.year
+## Age                                         -0.011616839           0.006069003
+## longitude                                   -0.005916942           0.004231093
+## latitude                                    -0.002443274           0.003437746
+## Incident Zip Code                            0.007202949          -0.008061971
+## Residence_Zip                               -0.002715420          -0.002548161
+## months.between.incident.and.death            0.008556129          -0.415734880
+## numeric.death.month                          0.974373776          -0.180767545
+## numeric.death.year                          -0.195530427           0.870241340
+## numeric.incident.month                       1.000000000          -0.180579092
+## numeric.incident.year                       -0.180579092           1.000000000</code></pre>
+<p>Based on the above summary results, we can see many trends from our dataset. Here are some of the most interesting data I found…
+The oldest age someone lived was 107. The average age of individuals who died from a gunshot wound to the head is age 3. The average age of individuals who died from mixed opioid toxicity is 18. The average age males died from suicide 45.9. The average age females died from suicide is 44.07. The average age males died from suicide 45.9. The average age females died from suicide is 44.07. The number of gun related deaths of black males is 2825. The number of gun related deaths of black females is 221. The average age of deaths due to homicide is 29.9. 2017 had the most accidental deaths, homicidal deaths, natural deaths, and suicidal deaths. The month of July had the most accidental deaths, homicidal deaths, natural deaths, and suicidal deaths.</p>
+</div>
+<div id="visualizing-30-pts" class="section level4">
+<h4>4. Visualizing (30 pts)</h4>
+<pre class="r"><code># correlation heatmap
+MC_MERGED %&gt;% select(numeric.incident.year, numeric.incident.month, 
+    numeric.death.year, numeric.death.month, longitude, latitude, 
+    Age) %&gt;% cor(use = &quot;na.or.complete&quot;) %&gt;% as.data.frame %&gt;% 
+    rownames_to_column %&gt;% pivot_longer(-1) %&gt;% ggplot(aes(rowname, 
+    name, fill = value)) + geom_tile() + geom_text(aes(label = round(value, 
+    2))) + xlab(&quot;&quot;) + ylab(&quot;&quot;) + scale_fill_gradient2(low = &quot;red&quot;, 
+    high = &quot;blue&quot;) + ggtitle(&quot;Correlation Heatmap of Numeric Variables&quot;) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))</code></pre>
+<p><img src="/project1_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># ggplot of
+better_gender &lt;- MC_MERGED %&gt;% filter(Gender == &quot;Male&quot; | Gender == 
+    &quot;Female&quot;)
+ggplot(better_gender, aes(`Manner of Death`)) + geom_bar(aes(y = Age, 
+    fill = Gender), stat = &quot;summary&quot;, fun.y = &quot;mean&quot;) + theme(axis.text.x = element_text(angle = 45, 
+    hjust = 1)) + ggtitle(&quot;Mean Ages of Various Manners of Death According to Gender&quot;) + 
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 10))</code></pre>
+<p><img src="/project1_files/figure-html/unnamed-chunk-5-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># ggplot of number of gun.related homicides based on gender
+# and 3 races
+HOMICIDES &lt;- MC_MERGED %&gt;% filter(`Manner of Death` == &quot;HOMICIDE&quot;)
+homicides &lt;- HOMICIDES %&gt;% filter(Gender == &quot;Male&quot; | Gender == 
+    &quot;Female&quot;) %&gt;% filter(Race == &quot;White&quot; | Race == &quot;Black&quot; | 
+    Race == &quot;Asian&quot;)
+ggplot(data = homicides, aes(x = `Gun Related`, fill = Gender)) + 
+    geom_bar(stat = &quot;count&quot;, , position = position_dodge()) + 
+    facet_grid(Race ~ .) + ggtitle(&quot;Number of Gun Related Homicides Based on Gender and Race&quot;) + 
+    theme_minimal() + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))</code></pre>
+<p><img src="/project1_files/figure-html/unnamed-chunk-5-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The first graph shows a correlation heat-map of 7 of my numeric variables (incident year, incident month, death year, death month, age, and longitude and latitude of the incident). The map shows a few variables with strong correlations. As we can see, the strongest correlation is between incident month and death month, as it has the darkest shade of blue and the value closest to 1 (r=0.97). This does not surprise me because if the incidents were fatal, it makes sense that they would not survive much longer after the incident occurred. Likewise, incident year and death year also had a strong correlation (r=0.87), however it was not as strong as the latter. Again, this strong correlation does not surprise me. However, it did surprise me that the correlation between months was stronger than the correlation between years. I would expect it to be the opposite because if a person died in the same month as their incident, that would mean they should have also died in the same year. That is, unless they died in the same month but X amount of years later. However, this seems to be unlikely based on the data.</p>
+<p>The second visualization is a bar plot that shows the average age for different manners of death for both males and females. I found these results to be very interesting. I was not very surprised by the age distribution between the various manners of death. I volunteer for a crisis hotline, and I remember learning that suicide rates are highest among middle aged adults, and this is also shown on the graph. The graph also shows the average ages for homicide, suicide, and accident were far lower than those in the natural column (as one would expect). However, I was fairly surprised by the equality in the gender distributions. For each category, the mean age for males and females was approximately the same. This equality was especially surprising to me in the natural category, as men tend to deteriorate/age faster than women do.</p>
+<p>The third visualization is a bar graph showing the number of gun related homicides based on both gender and race. The data presents an obvious trend between gun related homicides and both gender and race. The largest proportion of gun related homicide victims were black males, followed by white males, followed by black females, followed by white females. Although I expected some disproportion to exist, I did not think it would be so significant.</p>
+</div>
+<div id="dimensionality-reduction-20-pts" class="section level4">
+<h4>5. Dimensionality Reduction (20 pts)</h4>
+<pre class="r"><code>clust_dat &lt;- MC_MERGED %&gt;% select(months.between.incident.and.death, 
+    Age, latitude, longitude)
+clust_dat &lt;- na.omit(clust_dat)
+kmeans1 &lt;- clust_dat %&gt;% scale %&gt;% kmeans(2)
+kmeans1</code></pre>
+<pre><code>## K-means clustering with 2 clusters of sizes 17337, 12795
+## 
+## Cluster means:
+##   months.between.incident.and.death        Age   latitude  longitude
+## 1                        0.01368351 -0.3060648 -0.5801678  0.4866169
+## 2                       -0.01854091  0.4147125  0.7861172 -0.6593574
+## 
+## Clustering vector:
+##   [1] 2 2 1 2 2 1 2 1 2 2 2 2 2 2 1 1 1 1 1 2 1 1 2 2 1 2 1 1 2 1 1 1 1 2 2 2 1
+##  [38] 1 2 1 1 1 1 2 2 2 2 1 1 1 2 1 1 1 2 2 2 1 1 1 2 2 1 2 1 1 2 2 1 1 2 2 1 2
+##  [75] 1 1 1 2 1 1 1 2 2 1 1 2 1 1 2 1 1 2 2 2 1 2 1 1 2 1
+##  [ reached getOption(&quot;max.print&quot;) -- omitted 30032 entries ]
+## 
+## Within cluster sum of squares by cluster:
+## [1] 55618.32 37662.83
+##  (between_SS / total_SS =  22.6 %)
+## 
+## Available components:
+## 
+## [1] &quot;cluster&quot;      &quot;centers&quot;      &quot;totss&quot;        &quot;withinss&quot;     &quot;tot.withinss&quot;
+## [6] &quot;betweenss&quot;    &quot;size&quot;         &quot;iter&quot;         &quot;ifault&quot;</code></pre>
+<pre class="r"><code>kmeans1$size</code></pre>
+<pre><code>## [1] 17337 12795</code></pre>
+<pre class="r"><code>kmeans1$centers</code></pre>
+<pre><code>##   months.between.incident.and.death        Age   latitude  longitude
+## 1                        0.01368351 -0.3060648 -0.5801678  0.4866169
+## 2                       -0.01854091  0.4147125  0.7861172 -0.6593574</code></pre>
+<pre class="r"><code>kmeans1$cluster</code></pre>
+<pre><code>##   [1] 2 2 1 2 2 1 2 1 2 2 2 2 2 2 1 1 1 1 1 2 1 1 2 2 1 2 1 1 2 1 1 1 1 2 2 2 1
+##  [38] 1 2 1 1 1 1 2 2 2 2 1 1 1 2 1 1 1 2 2 2 1 1 1 2 2 1 2 1 1 2 2 1 1 2 2 1 2
+##  [75] 1 1 1 2 1 1 1 2 2 1 1 2 1 1 2 1 1 2 2 2 1 2 1 1 2 1
+##  [ reached getOption(&quot;max.print&quot;) -- omitted 30032 entries ]</code></pre>
+<pre class="r"><code>kmeans1$betweenss</code></pre>
+<pre><code>## [1] 27242.85</code></pre>
+<pre class="r"><code>kmeansclust &lt;- clust_dat %&gt;% mutate(cluster = as.factor(kmeans1$cluster))
+kmeansclust %&gt;% ggplot(aes(months.between.incident.and.death, 
+    Age, latitude, longitude, color = cluster)) + geom_point()</code></pre>
+<p><img src="/project1_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>wss &lt;- vector()
+for (i in 1:10) {
+    temp &lt;- clust_dat %&gt;% kmeans(i)
+    wss[i] &lt;- temp$tot.withinss
+}
+ggplot() + geom_point(aes(x = 1:10, y = wss)) + geom_path(aes(x = 1:10, 
+    y = wss)) + xlab(&quot;clusters&quot;) + scale_x_continuous(breaks = 1:10)</code></pre>
+<p><img src="/project1_files/figure-html/unnamed-chunk-6-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>sil_width &lt;- vector()
+for (i in 2:10) {
+    kms &lt;- kmeans(clust_dat, centers = i)  #compute k-means solution
+    sil &lt;- silhouette(kms$cluster, dist(clust_dat))  #get sil widths
+    sil_width[i] &lt;- mean(sil[, 2])  #take averages (higher is better)
+}
+ggplot() + geom_line(aes(x = 1:10, y = sil_width)) + scale_x_continuous(name = &quot;k&quot;, 
+    breaks = 1:10)</code></pre>
+<p><img src="/project1_files/figure-html/unnamed-chunk-6-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>I chose to use 2 clusters as this is where my silhouette width graph showed an elbow. Also, this is where my silhouette average was the highest (0.568). This indicates a reasonable structure has been found. According to the scatter plot, it appears the clusters have little variation between months between incident and death. However, for age, cluster 1 appears to have a much higher average than cluster 2. However, they both vary quite a bit.</p>
+</div>
+
+              <hr>
+              <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div>
+            </div>
+          </div>
+          <hr>
+        <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+        </div>
+      </div>
+      
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

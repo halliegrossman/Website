@@ -1,0 +1,4 @@
+"0",""
+"0","#ggplot of "
+"0","better_gender <- MC_MERGED %>% filter(Gender==""Male""|Gender==""Female"")"
+"0","ggplot(better_gender, aes(`Manner of Death`))+geom_bar(aes(y=Age,fill=Gender), stat = ""summary"", fun.y=""mean"")+theme(axis.text.x = element_text(angle = 45,hjust = 1)) + ggtitle(""Mean Ages of Various Manners of Death According to Gender"") + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))"

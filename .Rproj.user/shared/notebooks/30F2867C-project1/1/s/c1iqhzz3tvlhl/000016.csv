@@ -1,0 +1,1 @@
+"0","MC_MERGED %>% group_by(Race,Gender) %>% summarize(mean_age= mean(Age))"

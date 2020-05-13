@@ -1,0 +1,1 @@
+"0","MC_MERGED %>% group_by(`Manner of Death`) %>% summarize(med_year=median(numeric.death.year))"

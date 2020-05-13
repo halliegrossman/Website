@@ -1,0 +1,2 @@
+"0","ICU<-read.csv(""https://vincentarelbundock.github.io/Rdatasets/csv/Stat2Data/ICU.csv"") %>% select(-c(1))"
+"0","ICU<-ICU %>% mutate(Gender=ifelse(Sex==1,""Female"",""Male"")) %>% mutate(Outcome=ifelse(Survive==1,""Survived"",""Died"")) %>% mutate(Admission=ifelse(Emergency==1,""Emergency"",""Elective"")) %>% mutate(Infected=ifelse(Infection==1,""Yes"",""No"")) %>% mutate(AgeGroup=case_when(Age<=49 ~""Young"", Age<=69~""Middle"", Age>=70~""Older""))"

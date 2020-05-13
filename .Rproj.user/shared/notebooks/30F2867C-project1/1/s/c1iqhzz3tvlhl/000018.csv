@@ -1,0 +1,1 @@
+"0","MC_wide %>% group_by(Male,Female,Race) %>% summarize(mean_age= mean(Age))"

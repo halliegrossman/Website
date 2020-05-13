@@ -1,0 +1,180 @@
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: Hallie Grossman "SDS348"
+date: 'March 15, 2020'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+
+
+#### 0. Introduction (4  pts)
+```{r}
+library(dplyr)
+library(ggplot2)
+library(ggExtra)
+library(tidyverse)
+library(tidyselect)
+library(tidyr)
+library(reshape)
+library(reshape2)
+library(cluster)
+library(GGally)
+library(knitr)
+library(ggridges)
+library(readr)
+original_MC <- read_csv("Medical_Examiner_Case_Archive.csv")
+MC_1 <- original_MC %>% select(1:7)
+MC_2 <- original_MC %>% select(-(2:7))
+MC_MERGED <- MC_1 %>% full_join(MC_2)
+```
+
+I have chosen a dataset containing the details on the medical cases of deaths that have occurred in Cook County, IL. I acquired this dataset from the Cook County Government's website (https://datacatalog.cookcountyil.gov/Public-Safety/Medical-Examiner-Case-Archive/cjeq-bs86). Since the variables within the dataset are quite specific, I was not able to find a second dataset that would join well with this one. Instead, I just separated the two datasets and then recombined them with the Case Number being their common variable. In addition to case number, the first dataset contained information regarding the demographics of the individual (Race, age, Gender, and whether or not they were Latino). The dataset I joined it with contained the case number and information regarding the their death and the incident that occurred prior to their death. Specifically, the variables include date and time, manner of death, primary cause, secondary cause, address, city, zip-code, and latitude and longitude for both the incident and death. The city and zip-code in which the individual lived and whether their deaths were related to guns, opioids, or extreme temperature (hot or cold) were are also included. The original dataset also included a variable called ObjectID, however it was not useful or of interest to me so I got rid of it. 
+
+I decided to choose this as my dataset for two reasons. First, I was looking for something medical related, as I am a pre-med student. I am always fascinated by medical diagnoses and I thought it would be cool to investigate the most common causes of fatalities in general, and also among certain demographic groups. While there were many similar datasets I could have chosen, this one was of particular interest to me because I am from Chicago. The suburb I live in is considered to be in Lake County, but our neighboring county is Cook. Moreover, I liked that I could actually picture some of the places these incidents occurred, and even connect some of them to news articles I remember reading during the time it happened. Knowing where the “bad” neighborhoods are, I do expect to find some associations. For example, I would imagine a majority of the homicides to occur close to Riverdale because this is what people consider the south side of Chicago. In addition, I know there is quite a bit of hate crime that goes on against Blacks. That being said, I also expect to find an association between race and homicide victims. 
+
+#### 1. Tidying: Rearranging Wide/Long (8 pts)
+```{r}
+MC_wide <- MC_MERGED %>% pivot_wider(names_from = "Gender",values_from = "Manner of Death")
+MC_long <- MC_wide %>% pivot_longer(c("Male","Female"),names_to = "Gender",values_to = "Manner of Death")
+
+```
+
+Since my joined dataset was already tidy, I used the pivot functions to make my data easier to read. I used pivot_wider to expand my “Gender” column into separate “Male” and “Female” columns containing their respective manner of death. I then used pivot_longer to combine the Male and Female columns back into a single “Gender” column.
+    
+#### 2. Joining/Merging (8 pts)
+```{r}
+library(readr)
+original_MC <- read_csv("Medical_Examiner_Case_Archive.csv")
+MC_1 <- original_MC %>% select(1:7)
+MC_2 <- original_MC %>% select(-(2:7))
+MC_MERGED <- MC_1 %>% full_join(MC_2)
+```
+
+When combining my two datasets, I chose to use a full_join so all of my original data would be retained. Furthermore, none of my rows were dropped (all cases were kept). I joined my two datasets (“demo_MC” and “incident_MC”) by their common variable “Case.Number.” 
+
+#### 3. Wrangling (40 pts)
+```{r}
+#remove unwanted variables
+MC_MERGED <- MC_MERGED %>% select(-location) %>% select(-OBJECTID)
+#use select to reorder variables (move cold and heat related next to opioid and gun related)
+MC_MERGED <- MC_MERGED %>% select(1:14, `Cold Related`, `Heat Related`, everything())
+#separate month,year,date from time
+MC_MERGED <- MC_MERGED %>% separate('Date of Incident', into = c("incident.month","incident.day","incident.year"), sep = "/")
+MC_MERGED<-MC_MERGED %>% separate(incident.year, into = c("incident.year","incident.time"), sep = 4)
+#separate year month date time for death date
+MC_MERGED <- MC_MERGED %>% separate('Date of Death', into = c("death.month","death.day","death.year"), sep = "/")
+MC_MERGED<-MC_MERGED %>% separate(death.year, into = c("death.year","death.time"), sep = 4)
+#make object vector with all years/months dates and make numeric
+death_month <- MC_MERGED$death.month
+death_month <- as.numeric(death_month)
+death_year <- MC_MERGED$death.year
+death_year <- as.numeric(death_year)
+incident_month <- MC_MERGED$incident.month
+incident_month <- as.numeric(incident_month)
+incident_year <- MC_MERGED$incident.year
+incident_year <- as.numeric(incident_year)
+#MUTATE to make new column time between incident and death
+MC_MERGED <- MC_MERGED %>% mutate(months.between.incident.and.death = ((death_year - incident_year)*12) + (abs(death_month - incident_month)))
+#change months to names
+MC_MERGED <- MC_MERGED %>% mutate(incident.month = case_when(incident.month=="01"~"January",incident.month=="02"~"February",incident.month=="03"~"March",incident.month=="04"~"April",incident.month=="05"~"May",incident.month=="06"~"June",incident.month=="07"~"July",incident.month=="08"~"August",incident.month=="09"~"September",incident.month=="10"~"October",incident.month=="11"~"November",incident.month=="12"~"December")) %>% mutate(death.month = case_when(death.month=="01"~"January",death.month=="02"~"February",death.month=="03"~"March",death.month=="04"~"April",death.month=="05"~"May",death.month=="06"~"June",death.month=="07"~"July",death.month=="08"~"August",death.month=="09"~"September",death.month=="10"~"October",death.month=="11"~"November",death.month=="12"~"December"))
+#add numeric dates to dataset
+MC_MERGED <- MC_MERGED %>% mutate(numeric.death.month = death_month) %>% mutate(numeric.death.year = death_year) %>% mutate(numeric.incident.month = incident_month) %>% mutate(numeric.incident.year = incident_year)
+#use arrange to order by ascending age
+MC_MERGED %>% arrange(Age)
+#summarize all distinct per row
+MC_MERGED %>% summarise_all(n_distinct)
+
+#SUMMARY FUNCTIONS
+#test numeric functions and and if so apply the mean, sd, 
+MC_MERGED %>% summarise_if(is.numeric,mean,na.rm=T)
+MC_MERGED %>% summarise_if(is.numeric,sd,na.rm=T)
+MC_MERGED %>% summarise_if(is.numeric,list(min=min,max=max),na.rm=T)
+MC_MERGED %>% summarise_if(is.numeric,list(Q3=quantile),probs=.75,na.rm=T)
+
+MC_MERGED %>% group_by(`Primary Cause`) %>% summarize(mean_age= mean(Age))
+MC_MERGED %>% group_by(Race) %>% summarize(mean_age= mean(Age))
+MC_MERGED %>% group_by(Gender) %>% summarize(mean_age= mean(Age))
+MC_wide %>% group_by(Male,Female) %>% summarize(mean_age= mean(Age))
+MC_MERGED %>% group_by(Race,Gender) %>% summarize(mean_age= mean(Age))
+MC_wide %>% group_by(Male,Female,Race) %>% summarize(mean_age= mean(Age))
+MC_MERGED %>% filter(`Gun Related`) %>% group_by(Race,Gender) %>% summarize(n())
+MC_MERGED %>% group_by(Gender, Race) %>% summarize(mean_Age=mean(Age), sd_Age=sd(Age), med_Age=median(Age), var_Age=var(Age), max_Age=max(Age), min_Age=min(Age))
+MC_MERGED %>% group_by(`Manner of Death`) %>% summarize(mean_Age=mean(Age), sd_Age=sd(Age), med_Age=median(Age), var_Age=var(Age), max_Age=max(Age), min_Age=min(Age))
+MC_MERGED %>% group_by(`Manner of Death`, Race, Gender) %>% summarize(mean_Age=mean(Age), sd_Age=sd(Age), med_Age=median(Age), var_Age=var(Age), max_Age=max(Age), min_Age=min(Age))
+MC_MERGED %>% group_by(`Manner of Death`) %>% summarize(med_year=median(numeric.death.year))
+MC_MERGED %>% group_by(`Manner of Death`) %>% summarize(med_month=median(numeric.incident.month))
+MC_MERGED %>% group_by(`Manner of Death`,Race,`Incident City`,Gender) %>% summarize(mean_Age=mean(Age), sd_Age=sd(Age), med_Age=median(Age), var_Age=var(Age), max_Age=max(Age), min_Age=min(Age))
+#correlation matrix
+MC_MERGED %>% select_if(is.numeric) %>% cor(use = "na.or.complete")
+```
+
+Based on the above summary results, we can see many trends from our dataset. Here are some of the most interesting data I found… 
+The oldest age someone lived was 107. The average age of individuals who died from a gunshot wound to the head is age 3. The average age of individuals who died from mixed opioid toxicity is 18. The average age males died from suicide 45.9. The average age females died from suicide is 44.07. The average age males died from suicide 45.9. The average age females died from suicide is 44.07. The number of gun related deaths of black males is 2825. The number of gun related deaths of black females is 221. The average age of deaths due to homicide is 29.9. 2017 had the most accidental deaths, homicidal deaths, natural deaths, and suicidal deaths. The month of July had the most accidental deaths, homicidal deaths, natural deaths, and suicidal deaths. 
+
+
+#### 4. Visualizing (30 pts)
+```{r}
+#correlation heatmap
+MC_MERGED %>% select(numeric.incident.year,numeric.incident.month,numeric.death.year,numeric.death.month,longitude,latitude,Age) %>% cor(use = "na.or.complete") %>% as.data.frame %>% rownames_to_column %>% pivot_longer(-1) %>% ggplot(aes(rowname, name, fill=value)) + geom_tile() + geom_text(aes(label=round(value, 2))) + xlab("") + ylab("") + scale_fill_gradient2(low="red", high="blue") +ggtitle("Correlation Heatmap of Numeric Variables") +theme(axis.text.x = element_text(angle = 90,hjust = 1)) 
+
+#ggplot of 
+better_gender <- MC_MERGED %>% filter(Gender=="Male"|Gender=="Female")
+ggplot(better_gender, aes(`Manner of Death`))+geom_bar(aes(y=Age,fill=Gender), stat = "summary", fun.y="mean")+theme(axis.text.x = element_text(angle = 45,hjust = 1)) + ggtitle("Mean Ages of Various Manners of Death According to Gender") + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+#ggplot of number of gun.related homicides based on gender and 3 races
+HOMICIDES <- MC_MERGED %>% filter(`Manner of Death`=="HOMICIDE")
+homicides <- HOMICIDES %>% filter(Gender=="Male"|Gender=="Female") %>% filter(Race=="White"|Race=="Black"|Race=="Asian")
+ggplot(data = homicides, aes(x=`Gun Related`, fill=Gender))+geom_bar(stat = "count" ,, position= position_dodge()) + facet_grid(Race ~ .) + ggtitle("Number of Gun Related Homicides Based on Gender and Race") + theme_minimal() + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+```
+
+The first graph shows a correlation heat-map of 7 of my numeric variables (incident year, incident month, death year, death month, age, and longitude and latitude of the incident). The map shows a few variables with strong correlations. As we can see, the strongest correlation is between incident month and death month, as it has the darkest shade of blue and the value closest to 1 (r=0.97). This does not surprise me because if the incidents were fatal, it makes sense that they would not survive much longer after the incident occurred. Likewise, incident year and death year also had a strong correlation (r=0.87), however it was not as strong as the latter. Again, this strong correlation does not surprise me. However, it did surprise me that the correlation between months was stronger than the correlation between years. I would expect it to be the opposite because if a person died in the same month as their incident, that would mean they should have also died in the same year. That is, unless they died in the same month but X amount of years later. However, this seems to be unlikely based on the data.
+
+The second visualization is a bar plot that shows the average age for different manners of death for both males and females. I found these results to be very interesting. I was not very surprised by the age distribution between the various manners of death. I volunteer for a crisis hotline, and I remember learning that suicide rates are highest among middle aged adults, and this is also shown on the graph. The graph also shows the average ages for homicide, suicide, and accident were far lower than those in the natural column (as one would expect). However, I was fairly surprised by the equality in the gender distributions. For each category, the mean age for males and females was approximately the same. This equality was especially surprising to me in the natural category, as men tend to deteriorate/age faster than women do. 
+
+The third visualization is a bar graph showing the number of gun related homicides based on both gender and race. The data presents an obvious trend between gun related homicides and both gender and race. The largest proportion of gun related homicide victims were black males, followed by white males, followed by black females, followed by white females. Although I expected some disproportion to exist, I did not think it would be so significant. 
+    
+#### 5. Dimensionality Reduction (20 pts) 
+
+```{r}
+clust_dat <- MC_MERGED %>% select(months.between.incident.and.death, Age, latitude, longitude)
+clust_dat <- na.omit(clust_dat)
+kmeans1<-clust_dat%>% scale %>% kmeans(2)
+kmeans1
+kmeans1$size
+kmeans1$centers
+kmeans1$cluster
+kmeans1$betweenss
+kmeansclust <- clust_dat %>% mutate(cluster=as.factor(kmeans1$cluster))
+kmeansclust %>% ggplot(aes(months.between.incident.and.death, Age, latitude, longitude, color=cluster)) + geom_point()
+wss<-vector()
+for(i in 1:10){
+temp<- clust_dat %>% kmeans(i)
+wss[i]<-temp$tot.withinss
+}
+ggplot()+geom_point(aes(x=1:10,y=wss))+geom_path(aes(x=1:10,y=wss))+
+  xlab("clusters")+scale_x_continuous(breaks=1:10)
+
+sil_width<-vector()
+for(i in 2:10){
+  kms <- kmeans(clust_dat,centers=i) #compute k-means solution
+  sil <- silhouette(kms$cluster,dist(clust_dat)) #get sil widths
+  sil_width[i]<-mean(sil[,2]) #take averages (higher is better)
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+```
+
+I chose to use 2 clusters as this is where my silhouette width graph showed an elbow.  Also, this is where my silhouette average was the highest (0.568). This indicates a reasonable structure has been found. According to the scatter plot, it appears the clusters have little variation between months between incident and death. However,  for age, cluster 1 appears to have a much higher average than cluster 2. However, they both vary quite a bit.
