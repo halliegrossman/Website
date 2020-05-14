@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Hallie Grossman" />
+    <meta name="description" content="Describe your website">
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Strings and Regular Expressions in Python</title>
+    <meta name="generator" content="Hugo 0.70.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/blog/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/blog/blog-post/">Strings and Regular Expressions in Python</a></strong>
+          </h3>
+        </div>
+        <div class="blog-title">
+          <h4>
+          May 13, 2020
+            &nbsp;&nbsp;
+            
+            <span class="label label-success">Regular Expression</span>
+            
+            <span class="label label-success">Regex</span>
+            
+            <span class="label label-success">Python</span>
+            
+            <span class="label label-success">Strings</span>
+            
+          </h4>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<pre class="r"><code>library(reticulate)</code></pre>
+<p>#Strings</p>
+<p>A string in Python is a list of unicode characters in a particular order. These character sequences can include any combination of numbers, letters, and/or non-alphanumeric characters (i.e. backslashes, puncuation marks, spaces). All of the following can be considered strings.</p>
+<pre class="python"><code>string1=&quot;abcdefg&quot;</code></pre>
+<pre class="python"><code>string2 = &quot;abc 1,2,3&quot;</code></pre>
+<pre class="python"><code>string3 = &quot;Hi my name is Hallie and I was born on February 25, 1998 at 2:25 (on 2/25 at 2:25). Cool right!&quot;</code></pre>
+<pre class="python"><code>string4 = &quot;Hi my name is Hallie and I was born on February 25, 1998 at 2:25pm. I am currenty sitting outside of the Union at UT Austin on Wednesday the 13th of May finishing my coding project. It is due this Friday on May 14, 2020 at 11:59pm. I am sitting with my friend Gabby whose birthday is April 11. It feels nice being back on campus but it&#39;s so empty. I can&#39;t believe the year is almost over and we&#39;re graduating in a little over a week. Our virtual graduation date is May 23, 2020. We are hoping we will get a real graduation where we can actually walk and receive our diploma this December. I am currently listening to one of my favorite songs by John Mayer. The song is called Why Georgia. Here are the lyrics... I am driving up 85 in the Kind of morning that lasts all afternoon Just stuck inside the gloom 4 more exits to my apartment but I am tempted to keep the car in drive And leave it all behind Cause I wonder sometimes About the outcome Of a still verdictless life Am I living it right? Am I living it right? Am I living it right? Why, why Georgia, why? I rent a room and I fill the spaces with Wood in places to make it feel like home But all I feel&#39;s alone It might be a quarter life crisis Or just the stirring in my soul Either way I wonder sometimes About the outcome Of a still verdictless life Am I living it right? Am I living it right? Am I living it right? Why, why Georgia, why? So what, so I&#39;ve got a smile on But it&#39;s hiding the quiet superstitions in my head Don&#39;t believe me Don&#39;t believe me When I say I&#39;ve got it down Everybody is just a stranger but That&#39;s the danger in going my own way I guess it&#39;s the price I have to pay Still everything happens for a reason Is no reason not to ask myself If I am living it right Am I living it right? Am I living it right? Why, tell me why Why, why Georgia, why? He released this song on April 29, 2003. Some of my other favorite songs by him are Free Fallin&#39;, Gravity, Your Body Is a Wonderland, Daughters, No Such Thing, In the Blood, Stop This Train, Love on the Weekend, Slow Dancing in a Burning Room, Changing, Hertbreak Warfare, and I Guess I Just Feel Like. I went to his concert last summer on August 15, 2019. It was incredible!!!! The sun sets around 8:00pm and it is now 6:38pm, so I am going to head home before it gets dark. I&#39;m also getting pretty tired, which is surprising since I&#39;m such a night owl. I normally go to bed around 2:00am, but during this qurantine I have been going to bed even later! Sometimes I can see the sun start to rise and hear the birds chirping before I have even gone to bed!&quot;</code></pre>
+<p>Lets say we want to create a list of all the dates (in the format Month Day, Year) in string3. Well, that’s easy because there’s only one. But what if you had the same task with string4? We could read read it all and write each individual date down, but there’s a much faster way…</p>
+<p>#Regular Expression (Regex)</p>
+<p>We can create Regular Expressions in python to match and return the requested parts in a string. The chart below shows how the following symbols are used to code Regex expressons.</p>
+<p><img src="/blog/2020-05-13-blog-post_files/Screen%20Shot%202020-05-13%20at%205.28.55%20PM.png" /></p>
+<p>Lets go through some examples to show how/when some of the above symbols are used and how to turn it into a code that will return your desired results. After creating your Regex, simply put use re.findall(r“EXPRESSION”, STRING) and then go ahead and run it.</p>
+<p>Lets say we want to match all numbers and pull them from string4. We know that ’ matches so lets try that.</p>
+<pre class="python"><code>import re
+re.findall(r&quot;\d&quot;, string4)
+## [&#39;2&#39;, &#39;5&#39;, &#39;1&#39;, &#39;9&#39;, &#39;9&#39;, &#39;8&#39;, &#39;2&#39;, &#39;2&#39;, &#39;5&#39;, &#39;1&#39;, &#39;3&#39;, &#39;1&#39;, &#39;4&#39;, &#39;2&#39;, &#39;0&#39;, &#39;2&#39;, &#39;0&#39;, &#39;1&#39;, &#39;1&#39;, &#39;5&#39;, &#39;9&#39;, &#39;1&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;2&#39;, &#39;0&#39;, &#39;2&#39;, &#39;0&#39;, &#39;8&#39;, &#39;5&#39;, &#39;4&#39;, &#39;2&#39;, &#39;9&#39;, &#39;2&#39;, &#39;0&#39;, &#39;0&#39;, &#39;3&#39;, &#39;1&#39;, &#39;5&#39;, &#39;2&#39;, &#39;0&#39;, &#39;1&#39;, &#39;9&#39;, &#39;8&#39;, &#39;0&#39;, &#39;0&#39;, &#39;6&#39;, &#39;3&#39;, &#39;8&#39;, &#39;2&#39;, &#39;0&#39;, &#39;0&#39;]</code></pre>
+<p>Based on the output, we can see that &quot; did in fact match all the numbers, but it pulled each one individually. What if we want to keep them together so instead of reporting 25 as two separate numbers (two and five) it will report the number as a whole (twenty-five). We can make use of the ‘+’ symbol to excecute this.</p>
+<pre class="python"><code>re.findall(r&quot;\d+&quot;, string4)
+## [&#39;25&#39;, &#39;1998&#39;, &#39;2&#39;, &#39;25&#39;, &#39;13&#39;, &#39;14&#39;, &#39;2020&#39;, &#39;11&#39;, &#39;59&#39;, &#39;11&#39;, &#39;23&#39;, &#39;2020&#39;, &#39;85&#39;, &#39;4&#39;, &#39;29&#39;, &#39;2003&#39;, &#39;15&#39;, &#39;2019&#39;, &#39;8&#39;, &#39;00&#39;, &#39;6&#39;, &#39;38&#39;, &#39;2&#39;, &#39;00&#39;]</code></pre>
+<p>What if we only want to match the numeric values that represent a time? We can match unique characters with the “&quot; followed by the specific charcter we wan’t to match. See how we do this to match all numeric value that contains a”:&quot; in the middle.</p>
+<pre class="python"><code>re.findall(r&quot;(\d+\:\d+)&quot;, string4)
+## [&#39;2:25&#39;, &#39;11:59&#39;, &#39;8:00&#39;, &#39;6:38&#39;, &#39;2:00&#39;]</code></pre>
+<p>What if we want to know which of these times represent morning and which represent night? Here are some of the many ways we can do this…</p>
+<pre class="python"><code>re.findall(r&quot;(\d+\:\d+\w+)&quot;, string4)
+## [&#39;2:25pm&#39;, &#39;11:59pm&#39;, &#39;8:00pm&#39;, &#39;6:38pm&#39;, &#39;2:00am&#39;]
+re.findall(r&quot;(\d+\:\w+)&quot;, string4)
+## [&#39;2:25pm&#39;, &#39;11:59pm&#39;, &#39;8:00pm&#39;, &#39;6:38pm&#39;, &#39;2:00am&#39;]
+re.findall(r&quot;(\d+\:\d+..)&quot;, string4)
+## [&#39;2:25pm&#39;, &#39;11:59pm&#39;, &#39;8:00pm&#39;, &#39;6:38pm&#39;, &#39;2:00am&#39;]</code></pre>
+<p>So using what we’ve learned, how can we apply this to our original task to match all the dates that match the format Month Day, Year in string 4?</p>
+<pre class="python"><code>re.findall(r&quot;(\w+\s\d+\,\s\d+)&quot;, string4)
+## [&#39;February 25, 1998&#39;, &#39;May 14, 2020&#39;, &#39;May 23, 2020&#39;, &#39;April 29, 2003&#39;, &#39;August 15, 2019&#39;]</code></pre>
+<p>TA-DA!</p>
+
+              <hr>
+              <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div>
+            </div>
+          </div>
+          <hr>
+        <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+        </div>
+      </div>
+      
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>
