@@ -1,6 +1,0 @@
-"0","#install.packages(""car"")"
-"0","library(car)"
-"0","library(mvtnorm); library(ggExtra)"
-"0","#density plot"
-"0","ggplot(ICU, aes(x = SysBP, y = Pulse)) +"
-"0","  geom_point(alpha = .5) + geom_density_2d() + coord_fixed() + facet_wrap(~Infected)"

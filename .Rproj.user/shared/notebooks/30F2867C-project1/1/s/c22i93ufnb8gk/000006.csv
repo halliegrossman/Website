@@ -1,6 +1,0 @@
-"0",""
-"0",""
-"0","#ggplot of number of gun.related homicides based on gender and 3 races"
-"0","HOMICIDES <- MC_MERGED %>% filter(`Manner of Death`==""HOMICIDE"")"
-"0","homicides <- HOMICIDES %>% filter(Gender==""Male""|Gender==""Female"") %>% filter(Race==""White""|Race==""Black""|Race==""Asian"")"
-"0","ggplot(data = homicides, aes(x=`Gun Related`, fill=Gender))+geom_bar(stat = ""count"" ,, position= position_dodge()) + facet_grid(Race ~ .) + ggtitle(""Number of Gun Related Homicides Based on Gender and Race"") + theme_minimal() + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))"

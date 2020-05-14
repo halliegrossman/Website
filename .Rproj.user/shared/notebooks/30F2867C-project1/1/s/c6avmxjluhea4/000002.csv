@@ -1,3 +1,0 @@
-"0","MC_wide <- MC_MERGED %>% pivot_wider(names_from = ""Gender"",values_from = ""Manner of Death"")"
-"0","MC_long <- MC_wide %>% pivot_longer(c(""Male"",""Female""),names_to = ""Gender"",values_to = ""Manner of Death"")"
-"0",""

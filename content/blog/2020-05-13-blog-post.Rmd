@@ -1,0 +1,77 @@
+---
+title: Blog Post: Strings and Regular Expressions in Python
+author: Hallie Grossman
+date: '2020-05-13'
+slug: blog-post
+categories: ["Python"]
+tags: ["Regular Expression", "Regex", "Python", "Strings"]
+description: ''
+---
+```{r}
+library(reticulate)
+```
+
+#Strings
+
+A string in Python is a list of unicode characters in a particular order. These character sequences can include any combination of numbers, letters, and/or non-alphanumeric characters (i.e. backslashes, puncuation marks, spaces). All of the following can be considered strings.
+
+```{python}
+string1="abcdefg"
+```
+
+```{python}
+string2 = "abc 1,2,3"
+```
+
+```{python}
+string3 = "Hi my name is Hallie and I was born on February 25, 1998 at 2:25 (on 2/25 at 2:25). Cool right!"
+```
+
+```{python}
+string4 = "Hi my name is Hallie and I was born on February 25, 1998 at 2:25pm. I am currenty sitting outside of the Union at UT Austin on Wednesday the 13th of May finishing my coding project. It is due this Friday on May 14, 2020 at 11:59pm. I am sitting with my friend Gabby whose birthday is April 11. It feels nice being back on campus but it's so empty. I can't believe the year is almost over and we're graduating in a little over a week. Our virtual graduation date is May 23, 2020. We are hoping we will get a real graduation where we can actually walk and receive our diploma this December. I am currently listening to one of my favorite songs by John Mayer. The song is called Why Georgia. Here are the lyrics... I am driving up 85 in the Kind of morning that lasts all afternoon Just stuck inside the gloom 4 more exits to my apartment but I am tempted to keep the car in drive And leave it all behind Cause I wonder sometimes About the outcome Of a still verdictless life Am I living it right? Am I living it right? Am I living it right? Why, why Georgia, why? I rent a room and I fill the spaces with Wood in places to make it feel like home But all I feel's alone It might be a quarter life crisis Or just the stirring in my soul Either way I wonder sometimes About the outcome Of a still verdictless life Am I living it right? Am I living it right? Am I living it right? Why, why Georgia, why? So what, so I've got a smile on But it's hiding the quiet superstitions in my head Don't believe me Don't believe me When I say I've got it down Everybody is just a stranger but That's the danger in going my own way I guess it's the price I have to pay Still everything happens for a reason Is no reason not to ask myself If I am living it right Am I living it right? Am I living it right? Why, tell me why Why, why Georgia, why? He released this song on April 29, 2003. Some of my other favorite songs by him are Free Fallin', Gravity, Your Body Is a Wonderland, Daughters, No Such Thing, In the Blood, Stop This Train, Love on the Weekend, Slow Dancing in a Burning Room, Changing, Hertbreak Warfare, and I Guess I Just Feel Like. I went to his concert last summer on August 15, 2019. It was incredible!!!! The sun sets around 8:00pm and it is now 6:38pm, so I am going to head home before it gets dark. I'm also getting pretty tired, which is surprising since I'm such a night owl. I normally go to bed around 2:00am, but during this qurantine I have been going to bed even later! Sometimes I can see the sun start to rise and hear the birds chirping before I have even gone to bed!"
+```
+
+Lets say we want to create a list of all the dates (in the format Month Day, Year) in string3. Well, that's easy because there's only one. But what if you had the same task with string4? We could read read it all and write each individual date down, but there's a much faster way... 
+
+#Regular Expression (Regex)
+
+We can create Regular Expressions in python to match and return the requested parts in a string. The chart below shows how the following symbols are used to code Regex expressons. 
+
+![regex symbol/meaning chart](/blog/2020-05-13-blog-post_files/Screen Shot 2020-05-13 at 5.28.55 PM.png)
+
+Lets go through some examples to show how/when some of the above symbols are used and how to turn it into a code that will return your desired results. After creating your Regex, simply put use re.findall(r"EXPRESSION", STRING) and then go ahead and run it.
+
+Lets say we want to match all numbers and pull them from string4. We know that '\d' matches so lets try that.
+
+```{python}
+import re
+re.findall(r"\d", string4)
+```
+
+Based on the output, we can see that "\d" did in fact match all the numbers, but it pulled each one individually. What if we want to keep them together so instead of reporting 25 as two separate numbers (two and five) it will report the number as a whole (twenty-five). We can make use of the '+' symbol to excecute this.
+
+```{python}
+re.findall(r"\d+", string4)
+```
+
+What if we only want to match the numeric values that represent a time? We can match unique characters with the "\" followed by the specific charcter we wan't to match. See how we do this to match all numeric value that contains a ":" in the middle.
+
+```{python}
+re.findall(r"(\d+\:\d+)", string4)
+```
+
+What if we want to know which of these times represent morning and which represent night? Here are some of the many ways we can do this...
+
+```{python}
+re.findall(r"(\d+\:\d+\w+)", string4)
+re.findall(r"(\d+\:\w+)", string4)
+re.findall(r"(\d+\:\d+..)", string4)
+```
+
+So using what we've learned, how can we apply this to our original task to match all the dates that match the format Month Day, Year in string 4? 
+
+```{python}
+re.findall(r"(\w+\s\d+\,\s\d+)", string4)
+```
+
+TA-DA!

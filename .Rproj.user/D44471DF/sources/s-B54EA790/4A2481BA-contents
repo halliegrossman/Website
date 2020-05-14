@@ -20,13 +20,10 @@ custom_css = []
 custom_js  = []
 
 [params.social]
-Github        = "username"
+Github        = "halliegrossman"
 Email         = "halliegrossman@rocketmail.com"
-Twitter       = "username"
+Twitter       = "halliegrossman1"
 LinkedIn      = "hallie-grossman-29a050153"
-Stackoverflow = "username"
-Medium        = "username"
-Telegram      = "username"
 
 ## Main Menu
 [[menu.main]]

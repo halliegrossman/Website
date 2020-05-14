@@ -1,7 +1,0 @@
-"0","wss<-vector()"
-"0","for(i in 1:10){"
-"0","temp<- clust_dat %>% kmeans(i)"
-"0","wss[i]<-temp$tot.withinss"
-"0","}"
-"0","ggplot()+geom_point(aes(x=1:10,y=wss))+geom_path(aes(x=1:10,y=wss))+"
-"0","  xlab(""clusters"")+scale_x_continuous(breaks=1:10)"

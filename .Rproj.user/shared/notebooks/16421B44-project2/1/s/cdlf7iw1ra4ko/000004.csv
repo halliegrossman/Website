@@ -1,5 +1,0 @@
-"0","#ROCPLOT"
-"0","#install.packages(""plotROC"")"
-"0","library(plotROC)"
-"0","ROCplot<-ggplot(ICU)+geom_roc(aes(d=Survive,m=probs), n.cuts=0) "
-"0","ROCplot"

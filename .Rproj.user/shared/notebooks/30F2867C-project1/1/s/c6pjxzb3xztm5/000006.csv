@@ -1,8 +1,0 @@
-"0",""
-"0","sil_width<-vector()"
-"0","for(i in 2:10){"
-"0","  kms <- kmeans(clust_dat,centers=i) #compute k-means solution"
-"0","  sil <- silhouette(kms$cluster,dist(clust_dat)) #get sil widths"
-"0","  sil_width[i]<-mean(sil[,2]) #take averages (higher is better)"
-"0","}"
-"0","ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name=""k"",breaks=1:10)"

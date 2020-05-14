@@ -1,5 +1,0 @@
-"0","#ASSUMPTIONS"
-"0","#linearity"
-"0","resids<-fit3$residuals"
-"0","fitvals<-fit3$fitted.values"
-"0","ggplot()+geom_point(aes(fitvals,resids))+geom_hline(yintercept=0, color='red')"
