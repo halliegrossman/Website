@@ -42,5 +42,5 @@ url = "/projects/"
 name = "resume"
 identifier = "resume"
 weight = 300
-url = "/resume/"
+url = "/myresume.pdf"
 
